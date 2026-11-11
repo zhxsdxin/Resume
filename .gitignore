@@ -1,0 +1,24 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+err*.log
+
+# exported RTF backup (do NOT publish)
+*.rtf-export/
+
+# local build / job-digest tooling (not part of the resume site)
+make_enhanced.py
+job_digest*.py
+assemble*.py
+build_today.py
+job_digest_*.html
+job_digest_*.md
+job_digest_seen.json
+amazon-jp-interview-prep.html
+
+# node
+node_modules/
+
+# secrets
+*.env
