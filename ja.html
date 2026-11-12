@@ -132,18 +132,21 @@
     display:flex;align-items:flex-end;justify-content:space-between;gap:24px;
   }
   .hero-left{display:flex;align-items:center;gap:18px;min-width:0;}
-  .qr-profile{display:flex;flex-direction:column;align-items:center;gap:6px;flex:none;}
+  .qr-profile{display:flex;flex-direction:column;align-items:center;gap:7px;flex:none;}
   .qr-circle{
-    position:relative;width:108px;height:108px;border-radius:50%;
-    background:#fff;padding:12px;box-sizing:border-box;
-    border:3px solid rgba(255,255,255,.65);
-    box-shadow:0 2px 10px rgba(0,0,0,.22);
+    position:relative;width:124px;height:124px;border-radius:50%;
+    background:#fff;padding:0;box-sizing:border-box;
+    box-shadow:0 0 0 3px rgba(255,255,255,.65),0 2px 10px rgba(0,0,0,.22);
+    cursor:pointer;transition:transform .18s ease,box-shadow .18s ease;
   }
-  .qr-circle .qr{display:flex;justify-content:center;}
-  .qr-circle .qr svg{width:76px;height:76px;border-radius:8px;display:block;}
+  .qr-circle:hover{transform:translateY(-2px);box-shadow:0 0 0 3px rgba(255,255,255,.85),0 6px 18px rgba(0,0,0,.30);}
+  .qr-circle:focus-visible{outline:3px solid #9fc0e8;outline-offset:3px;}
+  .qr-wm{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;}
+  .qr-circle .qr{position:absolute;inset:0;display:flex;justify-content:center;align-items:center;}
+  .qr-circle .qr svg{width:86px;height:86px;border-radius:0;display:block;background:#fff;}
   .xz-badge{
-    position:absolute;right:-6px;bottom:-6px;width:32px;height:32px;border-radius:50%;
-    background:#2a4e7c;border:2px solid #fff;color:#fff;
+    position:absolute;right:-4px;bottom:-4px;width:32px;height:32px;border-radius:50%;
+    background:#2a4e7c;border:2px solid #fff;color:#fff;z-index:2;
     display:flex;align-items:center;justify-content:center;
     font-size:11px;font-weight:600;letter-spacing:.02em;
   }
@@ -172,6 +175,7 @@
   }
   .hero .hero-meta b{color:#fff;font-weight:600;letter-spacing:.04em;}
   .hero .hero-meta .dot{color:#6b7790;margin:0 6px;}
+  .nowrap{white-space:nowrap;}
 
   .contact{list-style:none;margin:0;padding:0;text-align:right;font-size:9pt;}
   .contact li{margin:0 0 5px;color:#c9d6dd;display:flex;align-items:center;justify-content:flex-end;gap:7px;}
@@ -477,24 +481,112 @@
   .side-nav a{width:11px;height:11px;border-radius:50%;background:rgba(42,78,124,.28);border:1px solid rgba(42,78,124,.5);transition:.25s;text-decoration:none;}
   .side-nav a:hover{background:rgba(42,78,124,.6);}
   .side-nav a.active{background:#2a4e7c;transform:scale(1.4);box-shadow:0 0 0 4px rgba(42,78,124,.18);}
-  /* qr now lives inside .qr-profile in hero-left */
+  /* qr lives in .qr-profile (hero); .qr is also reused by the modal */
   .qr{display:flex;justify-content:center;}
-  .qr svg{width:84px;height:84px;border-radius:8px;background:#fff;padding:4px;box-shadow:0 1px 4px rgba(0,0,0,.18);}
-  .qr-cap{text-align:center;font-size:10px;color:#cdd6e0;margin-top:2px;}
-  /* core-competencies: chips + radar side by side */
-  .cc-body{display:flex;gap:20px;align-items:flex-start;margin-top:2px;}
-  .cc-body .chips{flex:1 1 auto;min-width:0;}
-  .cc-body .radar-wrap{flex:0 0 236px;margin:0;display:flex;justify-content:center;align-items:flex-start;}
-  .cc-body .radar-wrap svg{width:100%;max-width:236px;height:auto;}
-  @media (max-width:680px), print{
-    .cc-body{flex-direction:column;align-items:stretch;}
-    .cc-body .radar-wrap{flex:none;margin:12px auto 0;}
-    .cc-body .radar-wrap svg{width:64%;max-width:300px;}
+  .qr-cap{text-align:center;font-size:10px;color:#cdd6e0;margin-top:2px;letter-spacing:.02em;}
+  /* core-competencies: radar centred, chips split across both sides */
+  .cc-body{
+    display:grid;grid-template-columns:1fr 200px 1fr;
+    gap:12px;align-items:center;margin-top:2px;
+  }
+  .cc-body .chips{display:flex;flex-direction:column;flex-wrap:nowrap;gap:5px;min-width:0;}
+  .cc-body .chips.cc-left{align-items:flex-end;}
+  .cc-body .chips.cc-right{align-items:flex-start;}
+  .cc-body .chip{max-width:100%;}
+  .cc-body .radar-wrap{grid-column:2;margin:0;display:flex;justify-content:center;align-items:center;}
+  .cc-body .radar-wrap svg{width:100%;max-width:200px;height:auto;}
+  @media screen and (max-width:680px){
+    .cc-body{grid-template-columns:1fr 1fr;gap:8px;align-items:start;}
+    .cc-body .radar-wrap{grid-column:1/-1;grid-row:1;margin:0 auto 4px;max-width:230px;}
+    .cc-body .radar-wrap svg{width:100%;max-width:230px;}
+    .cc-body .chips.cc-left{grid-column:1;grid-row:2;}
+    .cc-body .chips.cc-right{grid-column:2;grid-row:2;}
+    .cc-body .chip{font-size:8pt;padding:4px 9px;}
   }
   @media print{
     .side-nav{display:none!important;}
     .reveal{opacity:1!important;transform:none!important;animation:none!important;}
+    .cc-body{grid-template-columns:1fr 190px 1fr;gap:9px;}
+    .cc-body .radar-wrap svg{max-width:190px;}
   }
+  /* ===== Contact card modal ===== */
+  .qr-modal{
+    position:fixed;inset:0;z-index:100;
+    display:flex;align-items:center;justify-content:center;padding:16px;
+    background:rgba(12,20,30,.55);
+    -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+  }
+  .qr-modal[hidden]{display:none;}
+  .qr-card{
+    position:relative;width:min(370px,100%);max-height:min(90vh,720px);overflow:auto;
+    background:#fff;border-radius:14px;padding:18px 18px 16px;
+    box-shadow:0 18px 55px rgba(0,0,0,.34);
+    font-size:10pt;color:var(--text);
+    animation:cardIn .22s ease both;
+  }
+  @keyframes cardIn{from{opacity:0;transform:translateY(12px) scale(.97);}to{opacity:1;transform:none;}}
+  .qr-close{
+    position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;
+    border:1px solid var(--line);background:#fff;color:var(--muted);
+    font-size:17px;line-height:1;cursor:pointer;
+  }
+  .qr-close:hover{background:var(--tint);color:var(--ink);}
+  .qr-card-head{display:flex;gap:14px;align-items:center;padding-right:26px;}
+  .qr-big{flex:none;width:96px;height:96px;}
+  .qr-big svg{width:96px;height:96px;display:block;}
+  .qr-card-id h3{margin:0;font-size:14pt;font-weight:600;color:var(--ink);}
+  .qr-card-id .qr-role{margin:4px 0 0;font-size:9pt;color:var(--accent);letter-spacing:.06em;}
+  .qr-fields{margin:14px 0 0;border-top:1px solid var(--line);}
+  .qr-field{
+    display:flex;gap:10px;align-items:baseline;
+    padding:7px 2px;border-bottom:1px solid var(--tint);
+  }
+  .qr-field .k{flex:none;width:58px;font-size:8pt;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;}
+  .qr-field .v{min-width:0;overflow-wrap:anywhere;font-size:9.2pt;}
+  .qr-field a{color:var(--accent);text-decoration:none;}
+  .qr-field a:hover{text-decoration:underline;}
+  .qr-actions{display:flex;gap:8px;margin:14px 0 0;flex-wrap:wrap;}
+  .qr-actions button{
+    flex:1 1 auto;min-width:120px;font:inherit;font-size:9pt;font-weight:600;
+    padding:9px 12px;border-radius:8px;cursor:pointer;
+    border:1px solid var(--accent);background:#fff;color:var(--accent);
+    transition:background .12s,color .12s;
+  }
+  .qr-actions button:hover{background:var(--accent-soft);}
+  .qr-actions button.primary{background:var(--accent);color:#fff;}
+  .qr-actions button.primary:hover{background:#1f3d63;}
+  .qr-hint{margin:11px 0 0;font-size:8pt;line-height:1.5;color:var(--muted);}
+  @media print{.qr-modal{display:none!important;}}
+  /* ===== Responsive / mobile (screen only, never affects A4 print) ===== */
+  @media screen and (max-width:760px){
+    html{-webkit-text-size-adjust:100%;}
+    body{background:#fff;font-size:10.5pt;overflow-x:hidden;}
+    .sheet{width:100%;min-height:0;margin:0;padding:14px 14px 30px;box-shadow:none;border-radius:0;}
+    .hero{flex-direction:column;align-items:stretch;gap:14px;padding:16px 14px 15px;}
+    .hero-left{gap:12px;}
+    .qr-circle{width:104px;height:104px;}
+    .qr-circle .qr svg{width:72px;height:72px;}
+    .hero h1{font-size:22pt;letter-spacing:.02em;}
+    .hero .cn-name{font-size:11pt;letter-spacing:.12em;}
+    .hero .tagline{font-size:8.5pt;letter-spacing:.1em;}
+    .hero .hero-meta{font-size:8pt;line-height:1.7;}
+    .hero .hero-right{align-items:flex-start;gap:9px;}
+    .langlink{align-self:flex-start;}
+    .contact{text-align:left;font-size:8.8pt;}
+    .contact li,.contact li.tel{justify-content:flex-start;}
+    .profile{font-size:9.4pt;}
+    .stats-strip{grid-template-columns:repeat(2,1fr);}
+    .job-head{flex-wrap:wrap;gap:2px 10px;}
+    .achieve ul,.awards{columns:1;}
+    .edu-grid,.lang-grid,.cert-grid{grid-template-columns:1fr;}
+    .edu.edu-wide{gap:10px;}
+    .side-nav{display:none!important;}
+    .sheet-footer{flex-wrap:wrap;gap:4px;font-size:7.6pt;overflow-wrap:anywhere;}
+    .sec-title{font-size:9pt;letter-spacing:.1em;}
+  }
+
+
+
 
 
 
@@ -562,17 +654,30 @@
   <header class="hero">
     <div class="hero-left">
       <div class="qr-profile">
-        <div class="qr-circle" role="img" aria-label="Contact QR code">
+        <div class="qr-circle" role="button" tabindex="0" aria-haspopup="dialog" aria-label="Contact QR code">
+          <svg class="qr-wm" viewBox="0 0 124 124" aria-hidden="true">
+            <defs>
+              <pattern id="qrDots" width="8" height="8" patternUnits="userSpaceOnUse">
+                <circle cx="4" cy="4" r="1.35" fill="#c8d9ec"/>
+              </pattern>
+              <clipPath id="qrClip"><circle cx="62" cy="62" r="62"/></clipPath>
+            </defs>
+            <g clip-path="url(#qrClip)">
+              <rect width="124" height="124" fill="url(#qrDots)"/>
+              <circle cx="62" cy="62" r="55" fill="none" stroke="#cddbea" stroke-width="1"/>
+              <circle cx="62" cy="62" r="47" fill="none" stroke="#e0eaf4" stroke-width="1"/>
+            </g>
+          </svg>
           <div class="qr"></div>
           <span class="xz-badge" aria-hidden="true">XZ</span>
         </div>
-        <span class="qr-cap">読み取って連絡先を保存</span>
+        <span class="qr-cap">タップで名刺を表示</span>
       </div>
       <div>
         <h1>George <b>Zhang</b></h1>
         <p class="cn-name">張 鑫（<span class="reading">チョウ キン / Zhang Xin</span>）</p>
         <p class="tagline">IT運用エンジニア</p>
-        <p class="hero-meta"><b>生年</b> 平成8年9月<span class="dot">·</span><b>在留資格</b> 高度専門職1号ロ<span class="dot">·</span>2030年10月まで</p>
+        <p class="hero-meta"><b>生年</b> 平成8年9月<span class="dot">·</span><b>在留資格</b> <span class="nowrap">高度専門職1号ロ</span><span class="dot">·</span>2030年10月まで</p>
       </div>
     </div>
     <div class="hero-right">
@@ -616,39 +721,41 @@
       主な専門領域
     </h2>
     <div class="cc-body">
-      <div class="chips">
-      <span class="chip">ITサービスマネジメント（ServiceNow）</span>
-      <span class="chip">エンドユーザー／デスクサイドサポート</span>
-      <span class="chip">IT資産管理</span>
-      <span class="chip">ソフトウェアライセンス管理</span>
-      <span class="chip">Windows／macOS 管理</span>
-      <span class="chip">Microsoft 365 管理</span>
-      <span class="chip">エンタープライズモビリティ（Intune／Teams）</span>
-      <span class="chip">PowerShell・Python</span>
-      <span class="chip">Power Automate・SharePoint</span>
-      <span class="chip">Zabbix 監視</span>
-      <span class="chip">VMware ESXi・Dell サーバー</span>
-      <span class="chip">Azure・AWS</span>
-      <span class="chip">ドキュメント整備・ナレッジベース</span>
+      <div class="chips cc-left">
+        <span class="chip">ITサービスマネジメント（ServiceNow）</span>
+        <span class="chip">エンドユーザー／デスクサイドサポート</span>
+        <span class="chip">IT資産管理</span>
+        <span class="chip">ソフトウェアライセンス管理</span>
+        <span class="chip">Windows／macOS 管理</span>
+        <span class="chip">Microsoft 365 管理</span>
+        <span class="chip">エンタープライズモビリティ（Intune／Teams）</span>
+      </div>
+      <div class="radar-wrap">
+        <svg viewBox="0 0 260 200" role="img" aria-label="Skill radar chart">
+          <polygon class="radar-grid" points="130.0,30.0 196.6,78.4 171.1,156.6 88.9,156.6 63.4,78.4"/>
+          <polygon class="radar-grid" points="130.0,47.5 179.9,83.8 160.9,142.5 99.1,142.5 80.1,83.8"/>
+          <polygon class="radar-grid" points="130.0,65.0 163.3,89.2 150.6,128.3 109.4,128.3 96.7,89.2"/>
+          <g stroke="#d3d1c7" stroke-width=".6"><line x1="130" y1="100" x2="130.0" y2="30.0"/><line x1="130" y1="100" x2="196.6" y2="78.4"/><line x1="130" y1="100" x2="171.1" y2="156.6"/><line x1="130" y1="100" x2="88.9" y2="156.6"/><line x1="130" y1="100" x2="63.4" y2="78.4"/></g>
+          <g class="radar-grow">
+          <polygon class="radar-shape" points="130.0,33.5 189.9,80.5 167.9,152.1 97.9,144.2 82.1,84.4"/>
+          <g class="radar-dot"><circle cx="130.0" cy="33.5" r="2.4"/><circle cx="189.9" cy="80.5" r="2.4"/><circle cx="167.9" cy="152.1" r="2.4"/><circle cx="97.9" cy="144.2" r="2.4"/><circle cx="82.1" cy="84.4" r="2.4"/></g>
+          </g>
+          <text class="radar-axis" x="130.0" y="15.0" text-anchor="middle">IT運用</text>
+          <text class="radar-axis" x="213.7" y="75.8" text-anchor="middle">インフラ</text>
+          <text class="radar-axis" x="181.7" y="174.2" text-anchor="middle">テクニカルサポート</text>
+          <text class="radar-axis" x="78.3" y="174.2" text-anchor="middle">クラウド</text>
+          <text class="radar-axis" x="46.3" y="75.8" text-anchor="middle">スクリプト自動化</text>
+        </svg>
+      </div>
+      <div class="chips cc-right">
+        <span class="chip">PowerShell・Python</span>
+        <span class="chip">Power Automate・SharePoint</span>
+        <span class="chip">Zabbix 監視</span>
+        <span class="chip">VMware ESXi・Dell サーバー</span>
+        <span class="chip">Azure・AWS</span>
+        <span class="chip">ドキュメント整備・ナレッジベース</span>
+      </div>
     </div>
-    <div class="radar-wrap">
-      <svg viewBox="0 0 260 200" role="img" aria-label="Skill radar chart">
-        <polygon class="radar-grid" points="130.0,30.0 196.6,78.4 171.1,156.6 88.9,156.6 63.4,78.4"/>
-        <polygon class="radar-grid" points="130.0,47.5 179.9,83.8 160.9,142.5 99.1,142.5 80.1,83.8"/>
-        <polygon class="radar-grid" points="130.0,65.0 163.3,89.2 150.6,128.3 109.4,128.3 96.7,89.2"/>
-        <g stroke="#d3d1c7" stroke-width=".6"><line x1="130" y1="100" x2="130.0" y2="30.0"/><line x1="130" y1="100" x2="196.6" y2="78.4"/><line x1="130" y1="100" x2="171.1" y2="156.6"/><line x1="130" y1="100" x2="88.9" y2="156.6"/><line x1="130" y1="100" x2="63.4" y2="78.4"/></g>
-        <g class="radar-grow">
-        <polygon class="radar-shape" points="130.0,33.5 189.9,80.5 167.9,152.1 97.9,144.2 82.1,84.4"/>
-        <g class="radar-dot"><circle cx="130.0" cy="33.5" r="2.4"/><circle cx="189.9" cy="80.5" r="2.4"/><circle cx="167.9" cy="152.1" r="2.4"/><circle cx="97.9" cy="144.2" r="2.4"/><circle cx="82.1" cy="84.4" r="2.4"/></g>
-        </g>
-        <text class="radar-axis" x="130.0" y="15.0" text-anchor="middle">IT運用</text>
-        <text class="radar-axis" x="213.7" y="75.8" text-anchor="middle">インフラ</text>
-        <text class="radar-axis" x="181.7" y="174.2" text-anchor="middle">テクニカルサポート</text>
-        <text class="radar-axis" x="78.3" y="174.2" text-anchor="middle">クラウド</text>
-        <text class="radar-axis" x="46.3" y="75.8" text-anchor="middle">スクリプト自動化</text>
-      </svg>
-    </div>
-  </div>
   </section>
 
   <!-- ============ WORK EXPERIENCE ============ -->
@@ -949,6 +1056,22 @@
     <a href="#s5" title="ベンダー資格" aria-label="ベンダー資格"></a>
     <a href="#s6" title="受賞歴" aria-label="受賞歴"></a>
   </nav>
+
+  <div class="qr-modal" id="qrModal" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle" hidden>
+    <div class="qr-card">
+      <button class="qr-close" type="button" data-close="1">&times;</button>
+      <div class="qr-card-head">
+        <div class="qr-big" id="qrBig"></div>
+        <div class="qr-card-id">
+          <h3 id="qrModalTitle"></h3>
+          <p class="qr-role" id="qrRole"></p>
+        </div>
+      </div>
+      <div class="qr-fields" id="qrFields"></div>
+      <div class="qr-actions" id="qrActions"></div>
+      <p class="qr-hint" id="qrHint"></p>
+    </div>
+  </div>
 <script>
 //---------------------------------------------------------------------
 //
@@ -3263,11 +3386,79 @@ var qrcode = function() {
       if(p < 1) requestAnimationFrame(step); else el.textContent = target + suffix; }
     requestAnimationFrame(step);
   }
-  function buildQR(text, target){
+  /* ---- contact data: one source for the QR, clipboard and the .vcf file ---- */
+  var roleEl = document.querySelector('.hero .tagline');
+  var ROLE = roleEl ? roleEl.textContent.trim() : '';
+  var CONTACT = {
+    name:'George Zhang', role:ROLE,
+    email:'zhxsdxin@gmail.com',
+    tel1:'+81 90-8196-8581', tel2:'+86 182 1760 9086',
+    addr:'Osaka, Japan', url:'https://zhxsdxin.github.io/Resume/'
+  };
+  var VCARD_LINES = [
+    'BEGIN:VCARD','VERSION:3.0',
+    'N:Zhang;George;;;','FN:George Zhang',
+    'TITLE:'+ROLE,
+    'EMAIL;TYPE=INTERNET:'+CONTACT.email,
+    'TEL;TYPE=CELL:+819081968581',
+    'TEL;TYPE=CELL:+8618217609086',
+    'ADR;TYPE=HOME:;;;Osaka;;Japan',
+    'URL:'+CONTACT.url,
+    'END:VCARD'
+  ];
+  var VCARD_QR   = VCARD_LINES.join('\n');
+  var VCARD_FILE = VCARD_LINES.join('\r\n') + '\r\n';
+  var PLAIN = [
+    CONTACT.name, CONTACT.role,
+    'Email: ' + CONTACT.email,
+    'Phone: ' + CONTACT.tel1 + ' / ' + CONTACT.tel2,
+    'Location: ' + CONTACT.addr,
+    'Resume: ' + CONTACT.url
+  ].join('\n');
+
+  var IS_JA = document.documentElement.lang === 'ja';
+  var T = IS_JA ? {
+    title:'連絡先カード', copy:'情報をコピー', copied:'コピーしました',
+    download:'.vcf を保存', close:'閉じる', open:'連絡先カードを開く',
+    hint:'コードを読み取るか、情報をコピー、または vCard ファイルを保存できます。',
+    k:{email:'メール',tel:'電話',addr:'所在地',url:'履歴書'}
+  } : {
+    title:'Contact card', copy:'Copy details', copied:'Copied!',
+    download:'Save .vcf', close:'Close', open:'Open contact card',
+    hint:'Scan the code, copy the details, or save a vCard file.',
+    k:{email:'Email',tel:'Phone',addr:'Location',url:'Resume'}
+  };
+
+  function makeQR(text){
+    /* the bundled generator defaults to 8-bit truncation; enable its UTF-8
+       encoder so the Japanese job title survives in the vCard payload */
+    if(qrcode.stringToBytesFuncs && qrcode.stringToBytesFuncs['UTF-8'])
+      qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8'];
+    var q = qrcode(0, 'M'); q.addData(text); q.make(); return q;
+  }
+  function standardQR(text){
+    try{ return makeQR(text).createSvgTag({cellSize:4, margin:8, scalable:true}); }
+    catch(e){ console.warn('qr render failed', e); return ''; }
+  }
+  /* Dot-style QR: the three finder patterns stay square (critical for scanning),
+     data modules become round dots. Both are merged into two paths for a tiny DOM. */
+  function dotQR(text){
     try{
-      var qr = qrcode(0, 'M'); qr.addData(text); qr.make();
-      target.innerHTML = qr.createSvgTag({cellSize:3, margin:0, scalable:true});
-    }catch(e){ console.warn('qr render failed', e); }
+      var q = makeQR(text), n = q.getModuleCount(), cell = 4, size = n * cell;
+      var squares = [], dots = [];
+      for(var r = 0; r < n; r++) for(var c = 0; c < n; c++){
+        if(!q.isDark(r, c)) continue;
+        var x = c * cell, y = r * cell;
+        var finder = (r < 8 && c < 8) || (r < 8 && c >= n - 8) || (r >= n - 8 && c < 8);
+        if(finder) squares.push('M' + x + ',' + y + 'h' + cell + 'v' + cell + 'h-' + cell + 'z');
+        else dots.push('M' + (x + cell / 2) + ',' + (y + cell / 2) + 'h.1');
+      }
+      return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size + '">'
+        + '<rect width="' + size + '" height="' + size + '" fill="#fff"/>'
+        + '<path d="' + squares.join('') + '" fill="#131d29"/>'
+        + '<path d="' + dots.join('') + '" fill="none" stroke="#131d29" stroke-width="3.68" stroke-linecap="round"/>'
+        + '</svg>';
+    }catch(e){ console.warn('qr render failed', e); return standardQR(text); }
   }
   document.querySelectorAll('.stat-num').forEach(countUp);
   var navLinks = Array.prototype.slice.call(document.querySelectorAll('.side-nav a'));
@@ -3305,20 +3496,93 @@ var qrcode = function() {
     });
   });
   navOnScroll();
-  var qrel = document.querySelector('.qr');
-  if(qrel && typeof qrcode === 'function'){
-    var vcard = [
-      'BEGIN:VCARD','VERSION:3.0',
-      'N:Zhang;George;;;','FN:George Zhang',
-      'TITLE:IT運用 Engineer',
-      'EMAIL;TYPE=INTERNET:zhxsdxin@gmail.com',
-      'TEL;TYPE=CELL:+819081968581',
-      'TEL;TYPE=CELL:+8618217609086',
-      'ADR;TYPE=HOME:;;;Osaka;;Japan',
-      'URL:https://zhxsdxin.github.io/Resume/',
-      'END:VCARD'
-    ].join('\n');
-    buildQR(vcard, qrel);
+  /* ---- hero QR + contact card modal ---- */
+  if(typeof qrcode === 'function'){
+    var qrel = document.querySelector('.qr-circle .qr');
+    if(qrel) qrel.innerHTML = dotQR(VCARD_QR);
+  }
+
+  var modal  = document.getElementById('qrModal');
+  var circle = document.querySelector('.qr-circle');
+  if(modal && circle){
+    circle.setAttribute('title', T.open);
+    circle.setAttribute('aria-label', T.title);
+    var closeBtn = modal.querySelector('.qr-close');
+    closeBtn.setAttribute('aria-label', T.close);
+
+    document.getElementById('qrModalTitle').textContent = T.title;
+    document.getElementById('qrRole').textContent = CONTACT.role;
+    document.getElementById('qrHint').textContent = T.hint;
+
+    var rows = [
+      [T.k.email, '<a href="mailto:' + CONTACT.email + '">' + CONTACT.email + '</a>'],
+      [T.k.tel,   CONTACT.tel1 + '<br>' + CONTACT.tel2],
+      [T.k.addr,  CONTACT.addr],
+      [T.k.url,   '<a href="' + CONTACT.url + '" target="_blank" rel="noopener">' + CONTACT.url + '</a>']
+    ];
+    document.getElementById('qrFields').innerHTML = rows.map(function(p){
+      return '<div class="qr-field"><span class="k">' + p[0] + '</span><span class="v">' + p[1] + '</span></div>';
+    }).join('');
+
+    var actions = document.getElementById('qrActions');
+    var btnCopy = document.createElement('button');
+    btnCopy.type = 'button'; btnCopy.textContent = T.copy;
+    var btnSave = document.createElement('button');
+    btnSave.type = 'button'; btnSave.className = 'primary'; btnSave.textContent = T.download;
+    actions.appendChild(btnCopy); actions.appendChild(btnSave);
+
+    function copyText(t){
+      if(navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t);
+      return new Promise(function(res, rej){
+        var ta = document.createElement('textarea');
+        ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        try{ document.execCommand('copy') ? res() : rej(new Error('copy failed')); }
+        catch(e){ rej(e); }
+        document.body.removeChild(ta);
+      });
+    }
+    btnCopy.addEventListener('click', function(){
+      copyText(PLAIN).then(function(){
+        var old = btnCopy.textContent;
+        btnCopy.textContent = T.copied;
+        setTimeout(function(){ btnCopy.textContent = old; }, 1600);
+      }).catch(function(){ btnCopy.textContent = T.copy; });
+    });
+    btnSave.addEventListener('click', function(){
+      var blob = new Blob([VCARD_FILE], {type:'text/vcard;charset=utf-8'});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = 'George-Zhang.vcf';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    });
+
+    var big = document.getElementById('qrBig');
+    function openModal(){
+      if(!big.dataset.ready && typeof qrcode === 'function'){
+        big.innerHTML = standardQR(VCARD_QR);
+        big.dataset.ready = '1';
+      }
+      modal.hidden = false;
+      modal.setAttribute('aria-hidden', 'false');
+      closeBtn.focus();
+    }
+    function closeModal(){
+      modal.hidden = true;
+      modal.setAttribute('aria-hidden', 'true');
+      circle.focus();
+    }
+    circle.addEventListener('click', openModal);
+    circle.addEventListener('keydown', function(ev){
+      if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); openModal(); }
+    });
+    modal.addEventListener('click', function(ev){
+      if(ev.target === modal || ev.target.hasAttribute('data-close')) closeModal();
+    });
+    document.addEventListener('keydown', function(ev){
+      if(ev.key === 'Escape' && !modal.hidden) closeModal();
+    });
   }
 })();
 
