@@ -132,12 +132,20 @@
     display:flex;align-items:flex-end;justify-content:space-between;gap:24px;
   }
   .hero-left{display:flex;align-items:center;gap:18px;min-width:0;}
-  .avatar{
-    width:62px;height:62px;border-radius:50%;
-    background:rgba(255,255,255,.08);
-    border:2px solid rgba(255,255,255,.5);
-    color:#fff;display:flex;align-items:center;justify-content:center;
-    font-size:17pt;font-weight:500;letter-spacing:.04em;flex:none;
+  .qr-profile{display:flex;flex-direction:column;align-items:center;gap:6px;flex:none;}
+  .qr-circle{
+    position:relative;width:108px;height:108px;border-radius:50%;
+    background:#fff;padding:12px;box-sizing:border-box;
+    border:3px solid rgba(255,255,255,.65);
+    box-shadow:0 2px 10px rgba(0,0,0,.22);
+  }
+  .qr-circle .qr{display:flex;justify-content:center;}
+  .qr-circle .qr svg{width:76px;height:76px;border-radius:8px;display:block;}
+  .xz-badge{
+    position:absolute;right:-6px;bottom:-6px;width:32px;height:32px;border-radius:50%;
+    background:#2a4e7c;border:2px solid #fff;color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:600;letter-spacing:.02em;
   }
   .hero h1{
     margin:0;
@@ -460,14 +468,27 @@
   .side-nav a{width:11px;height:11px;border-radius:50%;background:rgba(42,78,124,.28);border:1px solid rgba(42,78,124,.5);transition:.25s;text-decoration:none;}
   .side-nav a:hover{background:rgba(42,78,124,.6);}
   .side-nav a.active{background:#2a4e7c;transform:scale(1.4);box-shadow:0 0 0 4px rgba(42,78,124,.18);}
-  .qr-box{display:flex;flex-direction:column;align-items:center;margin-top:8px;}
+  /* qr now lives inside .qr-profile in hero-left */
   .qr{display:flex;justify-content:center;}
   .qr svg{width:84px;height:84px;border-radius:8px;background:#fff;padding:4px;box-shadow:0 1px 4px rgba(0,0,0,.18);}
   .qr-cap{text-align:center;font-size:10px;color:#cdd6e0;margin-top:2px;}
+  /* core-competencies: chips + radar side by side */
+  .cc-body{display:flex;gap:20px;align-items:flex-start;margin-top:2px;}
+  .cc-body .chips{flex:1 1 auto;min-width:0;}
+  .cc-body .radar-wrap{flex:0 0 236px;margin:0;display:flex;justify-content:center;align-items:flex-start;}
+  .cc-body .radar-wrap svg{width:100%;max-width:236px;height:auto;}
+  @media (max-width:680px), print{
+    .cc-body{flex-direction:column;align-items:stretch;}
+    .cc-body .radar-wrap{flex:none;margin:12px auto 0;}
+    .cc-body .radar-wrap svg{width:64%;max-width:300px;}
+  }
   @media print{
     .side-nav{display:none!important;}
     .reveal{opacity:1!important;transform:none!important;animation:none!important;}
   }
+
+
+
 
   /* ---------- Language switch ---------- */
   .hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
@@ -523,7 +544,13 @@
   <!-- ============ HERO ============ -->
   <header class="hero">
     <div class="hero-left">
-      <div class="avatar" aria-hidden="true">XZ</div>
+      <div class="qr-profile">
+        <div class="qr-circle" role="img" aria-label="Email QR code">
+          <div class="qr"></div>
+          <span class="xz-badge" aria-hidden="true">XZ</span>
+        </div>
+        <span class="qr-cap">読み取ってメール</span>
+      </div>
       <div>
         <h1>George <b>Zhang</b></h1>
         <p class="cn-name">張 鑫（<span class="reading">チョウ キン / Zhang Xin</span>）</p>
@@ -532,10 +559,7 @@
     </div>
     <div class="hero-right">
       <a class="langlink" href="index.html">English →</a>
-      <div class="qr-box">
-        <div class="qr" role="img" aria-label="Email QR code"></div>
-        <div class="qr-cap">読み取ってメール</div>
-      </div>    <ul class="contact">
+      <ul class="contact">
       <li>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4.2-8 5-8-5V6l8 5 8-5v2.2z"/></svg>
         <a href="mailto:zhxsdxin&#64;gmail&#46;com">zhxsdxin&#64;gmail&#46;com</a>
@@ -573,7 +597,8 @@
       <svg class="sec-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg>
       主な専門領域
     </h2>
-    <div class="chips">
+    <div class="cc-body">
+      <div class="chips">
       <span class="chip">ITサービスマネジメント（ServiceNow）</span>
       <span class="chip">エンドユーザー／デスクサイドサポート</span>
       <span class="chip">IT資産管理</span>
@@ -603,6 +628,7 @@
         <text class="radar-axis" x="46.3" y="75.8" text-anchor="middle">スクリプト自動化</text>
       </svg>
     </div>
+  </div>
   </section>
 
   <!-- ============ WORK EXPERIENCE ============ -->
