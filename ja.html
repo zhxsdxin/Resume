@@ -166,6 +166,12 @@
     color:var(--accent-light);
   }
   .hero .tagline span{color:#9aa3b8;font-weight:400;letter-spacing:.09em;}
+  .hero .hero-meta{
+    margin:9px 0 0;font-size:8.5pt;font-weight:400;letter-spacing:.03em;
+    color:#c9d6dd;line-height:1.6;
+  }
+  .hero .hero-meta b{color:#fff;font-weight:600;letter-spacing:.04em;}
+  .hero .hero-meta .dot{color:#6b7790;margin:0 6px;}
 
   .contact{list-style:none;margin:0;padding:0;text-align:right;font-size:9pt;}
   .contact li{margin:0 0 5px;color:#c9d6dd;display:flex;align-items:center;justify-content:flex-end;gap:7px;}
@@ -495,6 +501,7 @@
 
 
 
+
   /* ---------- Language switch ---------- */
   .hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
   .langlink{
@@ -560,6 +567,7 @@
         <h1>George <b>Zhang</b></h1>
         <p class="cn-name">張 鑫（<span class="reading">チョウ キン / Zhang Xin</span>）</p>
         <p class="tagline">IT運用エンジニア</p>
+        <p class="hero-meta"><b>生年</b> 平成8年9月<span class="dot">·</span><b>在留資格</b> 高度専門職1号ロ<span class="dot">·</span>2030年10月まで</p>
       </div>
     </div>
     <div class="hero-right">
@@ -3264,27 +3272,31 @@ var qrcode = function() {
   function setActive(id){
     navLinks.forEach(function(l){ l.classList.toggle('active', l.getAttribute('href') === '#' + id); });
   }
-  var navTick = false;
+  var navTick = false, navLockUntil = 0;
   function navOnScroll(){
-    var line = window.scrollY + 100;
+    if (Date.now() < navLockUntil) return;            // 点击后短暂锁定，等平滑滚动结束
+    var y = window.scrollY || window.pageYOffset || 0;
+    var line = y + 2;                                 // 紧贴顶部：短章节也不会越界到下一节
     var cur = navSecs.length ? navSecs[0] : null;
     for (var i = 0; i < navSecs.length; i++){
-      if (navSecs[i].el.getBoundingClientRect().top + window.scrollY <= line) cur = navSecs[i];
+      if (navSecs[i].el.getBoundingClientRect().top + y <= line) cur = navSecs[i];
     }
-    if (navSecs.length && window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4){
-      cur = navSecs[navSecs.length - 1];
+    if (navSecs.length && window.innerHeight + y >= document.documentElement.scrollHeight - 4){
+      cur = navSecs[navSecs.length - 1];              // 滚到最底强制末节
     }
     if (cur) setActive(cur.el.id);
   }
   window.addEventListener('scroll', function(){
-    if (!navTick){ window.requestAnimationFrame(function(){ navOnScroll(); navTick = false; }); navTick = true; }
+    if (!navTick){ navTick = true; window.requestAnimationFrame(function(){ navOnScroll(); navTick = false; }); }
   }, {passive:true});
+  window.addEventListener('resize', navOnScroll, {passive:true});
   navLinks.forEach(function(a){
     a.addEventListener('click', function(ev){
       ev.preventDefault();
       var el = document.querySelector(a.getAttribute('href'));
       if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
-      setActive(el.id);
+      if (el) setActive(el.id);                       // 立即高亮被点的章节
+      navLockUntil = Date.now() + 800;                // 锁定 ~800ms，避免平滑滚动途中被滚动逻辑覆盖
     });
   });
   navOnScroll();
