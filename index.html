@@ -505,6 +505,7 @@
 
 
 
+
   /* ---------- Language switch ---------- */
   .hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
   .langlink{
@@ -560,11 +561,11 @@
   <header class="hero">
     <div class="hero-left">
       <div class="qr-profile">
-        <div class="qr-circle" role="img" aria-label="Email QR code">
+        <div class="qr-circle" role="img" aria-label="Contact QR code">
           <div class="qr"></div>
           <span class="xz-badge" aria-hidden="true">XZ</span>
         </div>
-        <span class="qr-cap">Scan to email</span>
+        <span class="qr-cap">Scan to save contact</span>
       </div>
       <div>
         <h1>George <b>Zhang</b></h1>
@@ -3305,7 +3306,19 @@ var qrcode = function() {
   });
   navOnScroll();
   var qrel = document.querySelector('.qr');
-  if(qrel && typeof qrcode === 'function') buildQR('mailto:zhxsdxin@gmail.com', qrel);
+  if(qrel && typeof qrcode === 'function'){
+    var vcard = [
+      'BEGIN:VCARD','VERSION:3.0',
+      'N:Zhang;George;;;','FN:George Zhang',
+      'TITLE:IT Operations Engineer',
+      'EMAIL;TYPE=INTERNET:zhxsdxin@gmail.com',
+      'TEL;TYPE=CELL:+819081968581',
+      'TEL;TYPE=CELL:+8618217609086',
+      'ADR;TYPE=HOME:;;;Osaka;;Japan',
+      'END:VCARD'
+    ].join('\n');
+    buildQR(vcard, qrel);
+  }
 })();
 
 </script>
