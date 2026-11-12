@@ -447,6 +447,7 @@
     section{break-inside:auto;}
     .work-timeline .job{break-inside:auto;}
     a{text-decoration:none;}
+    .radar-grow{animation:none!important;transform:none!important;}
   }
 
 
@@ -461,9 +462,11 @@
   .radar-grid{fill:none;stroke:#d3d1c7;stroke-width:.6;}
   .radar-shape{fill:rgba(42,78,124,.18);stroke:#2a4e7c;stroke-width:1.6;}
   .radar-dot{fill:#2a4e7c;}
+  .radar-grow{transform-box:view-box;transform-origin:130px 100px;animation:radarGrow 1.2s cubic-bezier(.22,.61,.36,1) both;}
+  @keyframes radarGrow{from{transform:scale(.02);opacity:0;}to{transform:scale(1);opacity:1;}}
   .reveal{opacity:0;transform:translateY(14px);animation:rise .6s ease forwards;}
   @keyframes rise{to{opacity:1;transform:none;}}
-  @media (prefers-reduced-motion: reduce){.reveal{animation:none;opacity:1;transform:none;}}
+  @media (prefers-reduced-motion: reduce){.reveal{animation:none;opacity:1;transform:none;}.radar-grow{animation:none;opacity:1;transform:none;}}
   .side-nav{position:fixed;right:14px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:11px;z-index:30;}
   .side-nav a{width:11px;height:11px;border-radius:50%;background:rgba(42,78,124,.28);border:1px solid rgba(42,78,124,.5);transition:.25s;text-decoration:none;}
   .side-nav a:hover{background:rgba(42,78,124,.6);}
@@ -486,6 +489,8 @@
     .side-nav{display:none!important;}
     .reveal{opacity:1!important;transform:none!important;animation:none!important;}
   }
+
+
 
 
 
@@ -620,8 +625,10 @@
         <polygon class="radar-grid" points="130.0,47.5 179.9,83.8 160.9,142.5 99.1,142.5 80.1,83.8"/>
         <polygon class="radar-grid" points="130.0,65.0 163.3,89.2 150.6,128.3 109.4,128.3 96.7,89.2"/>
         <g stroke="#d3d1c7" stroke-width=".6"><line x1="130" y1="100" x2="130.0" y2="30.0"/><line x1="130" y1="100" x2="196.6" y2="78.4"/><line x1="130" y1="100" x2="171.1" y2="156.6"/><line x1="130" y1="100" x2="88.9" y2="156.6"/><line x1="130" y1="100" x2="63.4" y2="78.4"/></g>
+        <g class="radar-grow">
         <polygon class="radar-shape" points="130.0,33.5 189.9,80.5 167.9,152.1 97.9,144.2 82.1,84.4"/>
         <g class="radar-dot"><circle cx="130.0" cy="33.5" r="2.4"/><circle cx="189.9" cy="80.5" r="2.4"/><circle cx="167.9" cy="152.1" r="2.4"/><circle cx="97.9" cy="144.2" r="2.4"/><circle cx="82.1" cy="84.4" r="2.4"/></g>
+        </g>
         <text class="radar-axis" x="130.0" y="15.0" text-anchor="middle">IT Operations</text>
         <text class="radar-axis" x="213.7" y="75.8" text-anchor="middle">Infrastructure</text>
         <text class="radar-axis" x="181.7" y="174.2" text-anchor="middle">Tech Support</text>
@@ -3251,19 +3258,37 @@ var qrcode = function() {
     }catch(e){ console.warn('qr render failed', e); }
   }
   document.querySelectorAll('.stat-num').forEach(countUp);
-  var links = Array.prototype.slice.call(document.querySelectorAll('.side-nav a'));
-  if('IntersectionObserver' in window && links.length){
-    var io = new IntersectionObserver(function(entries){
-      entries.forEach(function(e){
-        if(e.isIntersecting){
-          links.forEach(function(l){ l.classList.remove('active'); });
-          var a = document.querySelector('.side-nav a[href="#' + e.target.id + '"]');
-          if(a) a.classList.add('active');
-        }
-      });
-    }, {rootMargin:'-45% 0px -45% 0px'});
-    links.forEach(function(a){ var s = document.querySelector(a.getAttribute('href')); if(s) io.observe(s); });
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll('.side-nav a'));
+  var navSecs = navLinks.map(function(a){
+    return {a:a, el:document.querySelector(a.getAttribute('href'))};
+  }).filter(function(o){ return o.el; });
+  function setActive(id){
+    navLinks.forEach(function(l){ l.classList.toggle('active', l.getAttribute('href') === '#' + id); });
   }
+  var navTick = false;
+  function navOnScroll(){
+    var line = window.scrollY + 100;
+    var cur = navSecs.length ? navSecs[0] : null;
+    for (var i = 0; i < navSecs.length; i++){
+      if (navSecs[i].el.getBoundingClientRect().top + window.scrollY <= line) cur = navSecs[i];
+    }
+    if (navSecs.length && window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4){
+      cur = navSecs[navSecs.length - 1];
+    }
+    if (cur) setActive(cur.el.id);
+  }
+  window.addEventListener('scroll', function(){
+    if (!navTick){ window.requestAnimationFrame(function(){ navOnScroll(); navTick = false; }); navTick = true; }
+  }, {passive:true});
+  navLinks.forEach(function(a){
+    a.addEventListener('click', function(ev){
+      ev.preventDefault();
+      var el = document.querySelector(a.getAttribute('href'));
+      if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+      setActive(el.id);
+    });
+  });
+  navOnScroll();
   var qrel = document.querySelector('.qr');
   if(qrel && typeof qrcode === 'function') buildQR('mailto:zhxsdxin@gmail.com', qrel);
 })();
