@@ -598,12 +598,12 @@
        language switch at the top, location at the bottom, bottom edge level
        with the lowest point of the left half (caption / Visa line). */
     .hero .hero-right{
-      position:absolute;top:16px;bottom:15px;right:2px;z-index:1;
+      position:absolute;top:16px;bottom:21px;right:2px;z-index:1;
       /* left edge pinned just past the left half's widest text (x=330),
          so the two halves never overlap at any viewport width */
       left:332px;width:auto;max-width:120px;
       display:flex;flex-direction:column;align-items:flex-end;
-      justify-content:space-between;gap:3px;
+      justify-content:flex-end;gap:2px;   /* tight stack, no blank gaps */
     }
     .hero .hero-right a.langlink{
       font-size:7.5px;padding:2px 5px;border-radius:8px;
@@ -619,10 +619,8 @@
     .hero .contact li svg{display:none;}
     .hero .contact li.tel{align-items:flex-end;}
     .hero .contact li a,.hero .contact li .tel-lines{overflow-wrap:anywhere;word-break:break-word;}
-    /* Japanese lines are longer than the English ones; keep them inside the
-       same text column so the right strip never collides with them. No size
-       changes — only natural wrapping of the long lines. */
-    html[lang="ja"] .hero-left > div:last-child{max-width:186px;}
+    /* Japanese mobile: drop the Latin reading, keep the desktop version intact */
+    html[lang="ja"] .reading-en{display:none;}
     .profile{font-size:9.4pt;}
     .stats-strip{grid-template-columns:repeat(2,1fr);}
     .job-head{flex-wrap:wrap;gap:2px 10px;}
@@ -639,16 +637,18 @@
   /* narrower phones: the right strip gets thinner, so only its text tightens */
   @media screen and (max-width:375px){
     .hero .hero-right{gap:1px;}
-    .hero .hero-right a.langlink{font-size:7px;padding:1px 3px;}
+    .hero .hero-right a.langlink{font-size:6.5px;padding:1px 2px;letter-spacing:0;}
     .hero .contact li{font-size:4.6pt;line-height:1;}
   }
   /* very narrow phones: the left half stacks the photo above the text,
      which frees ~100px on the right; every left-hand size stays unchanged */
   @media screen and (max-width:350px){
     .hero-left{flex-direction:column;align-items:flex-start;gap:8px;}
-    .hero .hero-right{left:216px;width:auto;}
+    .hero .hero-right{left:216px;width:auto;bottom:15px;}
     .hero .contact li{font-size:7pt;line-height:1.3;}
   }
+
+
 
 
 
