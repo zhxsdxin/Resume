@@ -579,24 +579,23 @@
     html{-webkit-text-size-adjust:100%;}
     body{background:#fff;font-size:10.5pt;overflow-x:hidden;}
     .sheet{width:100%;min-height:0;margin:0;padding:14px 14px 30px;box-shadow:none;border-radius:0;}
-    .hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:12px 10px;}
-    .hero-left{gap:8px;min-width:0;}
-    .qr-circle{width:66px;height:66px;}
+    .hero{flex-direction:column;align-items:stretch;gap:10px;padding:16px 14px 15px;}
+    .hero-left{gap:12px;}
+    .qr-circle{width:104px;height:104px;}
     .qr-circle .qr{display:none;}
-    .qr-cap{display:none;}
-    .qr-circle .xz-badge{width:18px;height:18px;font-size:7px;}
-    .hero h1{font-size:14pt;letter-spacing:0;}
-    .hero .cn-name{font-size:8.5pt;letter-spacing:.06em;}
-    .hero .tagline{font-size:7pt;letter-spacing:.04em;}
-    .hero .hero-meta{font-size:6.4pt;line-height:1.45;}
+    .qr-circle .qr svg{width:72px;height:72px;}
+    .hero h1{font-size:22pt;letter-spacing:.02em;}
+    .hero .cn-name{font-size:11pt;letter-spacing:.12em;}
+    .hero .tagline{font-size:8.5pt;letter-spacing:.1em;}
+    .hero .hero-meta{font-size:8pt;line-height:1.7;}
     .hero .hero-meta .meta-dob{display:block;}
     .hero .hero-meta .meta-sep{display:none;}
-    .hero .hero-meta .meta-visa{display:block;margin-top:1px;white-space:nowrap;}
-    .hero-right{gap:4px;min-width:0;}
-    .hero-right a.langlink{font-size:8px;padding:2px 6px;border-radius:8px;}
-    .contact{font-size:6.4pt;line-height:1.3;}
-    .contact li{margin:0 0 3px;gap:0;justify-content:flex-end;}
-    .contact li svg{display:none;}
+    .hero .hero-meta .meta-visa{display:block;margin-top:2px;}
+    .hero-right{align-items:flex-end;gap:5px;}
+    .hero-right a.langlink{font-size:9px;padding:3px 9px;border-radius:10px;}
+    .contact{font-size:7.6pt;line-height:1.35;}
+    .contact li{margin:0 0 3px;gap:5px;justify-content:flex-end;}
+    .contact li svg{width:10px;height:10px;}
     .contact li.tel{align-items:flex-start;}
     .profile{font-size:9.4pt;}
     .stats-strip{grid-template-columns:repeat(2,1fr);}
@@ -609,13 +608,14 @@
     .sec-title{font-size:9pt;letter-spacing:.1em;}
   }
   @media screen and (max-width:420px){
-    .hero h1{font-size:12.5pt;letter-spacing:0;}
+    .hero h1{font-size:18pt;letter-spacing:.01em;}
   }
-  /* very narrow phones: stack the two halves so nothing overlaps */
+  /* very narrow phones: stack the photo above the text instead of shrinking it */
   @media screen and (max-width:350px){
-    .hero{grid-template-columns:minmax(0,1fr);gap:8px;}
-    .hero-right{align-items:flex-end;}
+    .hero-left{flex-direction:column;align-items:flex-start;gap:8px;}
   }
+
+
 
 
 
