@@ -157,7 +157,7 @@
   .hero h1{
     margin:0;
     font-size:33pt;font-weight:500;letter-spacing:.045em;line-height:1.05;
-    text-transform:uppercase;
+    text-transform:uppercase;white-space:nowrap;
   }
   .hero h1 b{font-weight:500;}
   .hero .cn-name{
@@ -589,6 +589,10 @@
     .sheet-footer{flex-wrap:wrap;gap:4px;font-size:7.6pt;overflow-wrap:anywhere;}
     .sec-title{font-size:9pt;letter-spacing:.1em;}
   }
+  @media screen and (max-width:420px){
+    .hero h1{font-size:18pt;letter-spacing:.01em;}
+  }
+
 
 
 
