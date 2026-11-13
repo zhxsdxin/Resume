@@ -187,11 +187,16 @@
   .contact{list-style:none;margin:0;padding:0;text-align:right;font-size:9pt;}
   .contact li{margin:0 0 5px;color:#c9d6dd;display:flex;align-items:center;justify-content:flex-end;gap:7px;}
   .contact li:last-child{margin-bottom:0;}
-  .contact li.tel{align-items:flex-start;}
-  .contact li.tel svg{margin-top:3px;}
-  .contact li.tel .tel-lines{line-height:1.45;}
+  .contact li.c-tel{flex-direction:column;align-items:flex-end;gap:2px;}
   .contact a{color:inherit;text-decoration:none;}
-  .contact svg{width:11px;height:11px;flex:none;fill:var(--accent-light);}
+  .contact .c-link{display:inline-flex;align-items:center;gap:7px;background:none;border:0;
+    padding:0;margin:0;font:inherit;color:inherit;cursor:pointer;line-height:1.3;
+    appearance:none;-webkit-appearance:none;}
+  .contact .c-link.locbtn{font-family:inherit;}
+  .contact .c-link:hover{opacity:.82;}
+  .contact .c-text{white-space:nowrap;}
+  .contact svg{width:11px;height:11px;flex:none;fill:var(--accent-light);display:block;}
+  .contact li.c-tel .c-link:first-child{align-items:center;}
 
   /* ---------- Profile ---------- */
   .profile{
@@ -574,6 +579,16 @@
   .qr-actions button.primary:hover{background:#1f3d63;}
   .qr-hint{margin:11px 0 0;font-size:8pt;line-height:1.5;color:var(--muted);}
   @media print{.qr-modal{display:none!important;}}
+  /* location toast: centred pill that fades in on tap and auto-hides */
+  .loc-toast{
+    position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.94);
+    background:rgba(22,32,43,.95);color:#fff;padding:11px 20px;border-radius:14px;
+    font-size:14px;letter-spacing:.02em;box-shadow:0 10px 34px rgba(0,0,0,.32);
+    opacity:0;pointer-events:none;z-index:1200;white-space:nowrap;
+    transition:opacity .18s ease, transform .18s ease;
+  }
+  .loc-toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
+  @media print{.loc-toast{display:none!important;}}
   /* ===== Responsive / mobile (screen only, never affects A4 print) ===== */
   @media screen and (max-width:760px){
     html{-webkit-text-size-adjust:100%;}
@@ -582,7 +597,9 @@
     /* full-bleed hero: gives the right column room without moving the left half.
        content still starts at x=28 (14 sheet padding + 14 hero padding), unchanged. */
     .hero{position:relative;margin-left:-14px;margin-right:-14px;border-radius:0;
-          flex-direction:column;align-items:stretch;gap:0;padding:16px 2px 15px 28px;}
+          flex-direction:column;align-items:stretch;gap:0;padding:16px 28px 15px 28px;}
+    /* both hero paddings are now 28px, so the right column's right edge sits
+       exactly 28px from the page edge — equal to the left text margin. */
     .hero-left{gap:12px;}
     .qr-circle{width:104px;height:104px;}
     .qr-circle .qr{display:none;}
@@ -594,36 +611,38 @@
     .hero .hero-meta .meta-dob{display:block;}
     .hero .hero-meta .meta-sep{display:none;}
     .hero .hero-meta .meta-visa{display:block;margin-top:2px;}
-    /* right half only: a vertical strip pinned to the right edge.
-       language switch at the top, location at the bottom, bottom edge level
-       with the lowest point of the left half (caption / Visa line). */
+    /* right half: a vertical strip pinned to the right edge. Source order is
+       language / email / phone / location, and justify-content:flex-end packs it
+       to the bottom — so language ends up on top, location at the very bottom,
+       level with the left half (caption / Visa line). The hero is full-bleed, so
+       its padding-box right edge sits at the viewport edge; right:28px matches
+       the left text's 28px page gap (right gap == left gap). */
     .hero .hero-right{
-      position:absolute;top:16px;bottom:15px;right:2px;z-index:1;
-      /* width (not left) keeps the strip glued to the right edge: an absolute
-         box with left + right + max-width discards "right" in LTR and drifts
-         back to the left once max-width starts clipping it */
-      left:auto;width:calc(100% - 334px);max-width:120px;
+      position:absolute;top:16px;bottom:15px;right:28px;left:auto;z-index:1;
+      width:auto;max-width:200px;          /* shrink-to-fit: never forces overlap */
       display:flex;flex-direction:column;align-items:flex-end;
-      justify-content:flex-end;gap:2px;   /* tight stack, no blank gaps */
+      justify-content:flex-end;gap:4px;
     }
     .hero .hero-right a.langlink{
-      font-size:7.5px;padding:2px 5px;border-radius:8px;
+      font-size:9px;padding:2px 6px;border-radius:8px;
       white-space:nowrap;line-height:1.2;flex:none;
     }
     .hero .hero-right a.langlink::after{content:none;}
     .hero .contact{display:contents;}
     .hero .contact li{
       margin:0;gap:.3em;justify-content:flex-end;align-items:center;
-      width:fit-content;max-width:100%;font-size:6pt;line-height:1.25;
+      width:fit-content;max-width:100%;font-size:8pt;line-height:1.3;
       text-align:right;overflow-wrap:anywhere;word-break:break-word;
     }
+    .hero .contact li.c-tel{flex-direction:column;align-items:flex-end;gap:1px;}
+    .hero .contact .c-link{justify-content:flex-end;}
+    .hero .contact .c-text{white-space:normal;overflow-wrap:anywhere;word-break:break-word;}
     /* em sizing: the icon follows the contact text size at every breakpoint */
     .hero .contact li svg{
       display:block;width:1.15em;height:1.15em;margin:0;
       flex:none;align-self:center;fill:var(--accent-light);opacity:.9;
     }
-    .hero .contact li.tel{align-items:center;}
-    .hero .contact li a,.hero .contact li .tel-lines{overflow-wrap:anywhere;word-break:break-word;}
+    .hero .contact li a,.hero .contact li .c-text{overflow-wrap:anywhere;word-break:break-word;}
     /* Japanese mobile: drop the Latin reading, keep the desktop version intact */
     html[lang="ja"] .reading-en{display:none;}
     .profile{font-size:9.4pt;}
@@ -636,23 +655,34 @@
     .sheet-footer{flex-wrap:wrap;gap:4px;font-size:7.6pt;overflow-wrap:anywhere;}
     .sec-title{font-size:9pt;letter-spacing:.1em;}
   }
+  /* text mode near its lower bound: nudge the font down a touch so the longest
+     line (email) never crowds the left block. Below 560px it switches to icons. */
+  @media screen and (max-width:620px){
+    .hero .contact li{font-size:7.5pt;line-height:1.25;}
+  }
+  /* true phone portrait (≤560px): the right column holds only the language
+     switch + 3 tappable icons — there is no room for text. Email/phone are real
+     links (mailto / tel); tapping location pops a centred toast that fades out.
+     To free horizontal space for the icon column we stack the photo above the
+     name (the left block is unchanged on any wider / desktop view). The icon
+     stack is kept short so the language pill stays in its own top band. */
+  @media screen and (max-width:560px){
+    .hero-left{flex-direction:column;align-items:flex-start;gap:8px;text-align:left;}
+    .contact .c-text{display:none !important;}
+    .contact li.c-tel .tel2{display:none !important;}
+    .contact li{margin:0;gap:0;}
+    .hero .contact li svg{width:20px;height:20px;}
+    .hero .hero-right{gap:6px;max-width:none;}
+    .hero .hero-right a.langlink{font-size:10px;padding:3px 8px;border-radius:9px;}
+  }
   @media screen and (max-width:420px){
     .hero h1{font-size:18pt;letter-spacing:.01em;}
   }
-  /* narrower phones: the right strip gets thinner, so only its text tightens */
-  @media screen and (max-width:375px){
-    .hero .hero-right{gap:1px;}
-    .hero .hero-right a.langlink{font-size:6.5px;padding:1px 2px;letter-spacing:0;}
-    .hero .contact li{font-size:4.6pt;line-height:1;}
-  }
-  /* very narrow phones (up to 370px): the right strip would be only 17-36px
-     wide, too narrow for an icon plus the contact text. The photo moves above
-     the name, freeing ~100px; every left-hand size stays unchanged. */
-  @media screen and (max-width:370px){
-    .hero-left{flex-direction:column;align-items:flex-start;gap:8px;}
-    .hero .hero-right{width:calc(100% - 218px);bottom:15px;}
-    .hero .contact li{font-size:7pt;line-height:1.3;}
-  }
+
+
+
+
+
 
 
 
@@ -796,17 +826,24 @@
     <div class="hero-right">
       <a class="langlink" href="ja.html">日本語</a>
       <ul class="contact">
-      <li>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4.2-8 5-8-5V6l8 5 8-5v2.2z"/></svg>
-        <a href="mailto:zhxsdxin&#64;gmail&#46;com">zhxsdxin&#64;gmail&#46;com</a>
+      <li class="c-email">
+        <a class="c-link" href="mailto:zhxsdxin&#64;gmail&#46;com">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4.2-8 5-8-5V6l8 5 8-5v2.2z"/></svg>
+          <span class="c-text">zhxsdxin&#64;gmail&#46;com</span>
+        </a>
       </li>
-      <li class="tel">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15.5 15.5 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24c1.1.37 2.3.57 3.5.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.2.2 2.4.57 3.5a1 1 0 0 1-.25 1l-2.2 2.3z"/></svg>
-        <span class="tel-lines">&#43;81 90&#45;8&#49;96&#45;8&#53;81<br>&#43;86 1&#56;2 1&#55;60 9&#48;86</span>
+      <li class="c-tel">
+        <a class="c-link" href="tel:+819081968581">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15.5 15.5 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24c1.1.37 2.3.57 3.5.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.2.2 2.4.57 3.5a1 1 0 0 1-.25 1l-2.2 2.3z"/></svg>
+          <span class="c-text tel1">&#43;81 90&#45;8&#49;96&#45;8&#53;81</span>
+        </a>
+        <a class="c-link tel2" href="tel:+8618217609086"><span class="c-text">&#43;86 1&#56;2 1&#55;60 9&#48;86</span></a>
       </li>
-      <li>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
-        Osaka, Japan
+      <li class="c-loc">
+        <button class="c-link locbtn" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+          <span class="c-text">Osaka, Japan</span>
+        </button>
       </li>
     </ul>
     </div>
@@ -1170,6 +1207,9 @@
     <a href="#s5" title="Certifications" aria-label="Certifications"></a>
     <a href="#s6" title="Awards" aria-label="Awards"></a>
   </nav>
+
+  <!-- location toast (shown when the location icon/label is tapped) -->
+  <div class="loc-toast" id="locToast" role="status" aria-live="polite"></div>
 
   <div class="qr-modal" id="qrModal" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle" hidden>
     <div class="qr-card">
@@ -3722,6 +3762,23 @@ var qrcode = function() {
       }
     });
   }
+
+  /* location icon/label: show a centred toast that fades out automatically */
+  (function(){
+    var btns  = document.querySelectorAll('.locbtn');
+    var toast = document.getElementById('locToast');
+    if(!btns.length || !toast) return;
+    var timer = null;
+    btns.forEach(function(b){
+      b.addEventListener('click', function(ev){
+        ev.preventDefault();
+        toast.textContent = (b.textContent || '').trim() || CONTACT.addr;
+        toast.classList.add('show');
+        if(timer) clearTimeout(timer);
+        timer = setTimeout(function(){ toast.classList.remove('show'); }, 2200);
+      });
+    });
+  })();
 
 })();
 
