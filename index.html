@@ -598,10 +598,11 @@
        language switch at the top, location at the bottom, bottom edge level
        with the lowest point of the left half (caption / Visa line). */
     .hero .hero-right{
-      position:absolute;top:16px;bottom:21px;right:2px;z-index:1;
-      /* left edge pinned just past the left half's widest text (x=330),
-         so the two halves never overlap at any viewport width */
-      left:332px;width:auto;max-width:120px;
+      position:absolute;top:16px;bottom:15px;right:2px;z-index:1;
+      /* width (not left) keeps the strip glued to the right edge: an absolute
+         box with left + right + max-width discards "right" in LTR and drifts
+         back to the left once max-width starts clipping it */
+      left:auto;width:calc(100% - 334px);max-width:120px;
       display:flex;flex-direction:column;align-items:flex-end;
       justify-content:flex-end;gap:2px;   /* tight stack, no blank gaps */
     }
@@ -612,12 +613,16 @@
     .hero .hero-right a.langlink::after{content:none;}
     .hero .contact{display:contents;}
     .hero .contact li{
-      margin:0;gap:0;justify-content:flex-end;align-items:flex-end;
-      max-width:100%;font-size:6pt;line-height:1.2;text-align:right;
-      overflow-wrap:anywhere;word-break:break-word;
+      margin:0;gap:.3em;justify-content:flex-end;align-items:center;
+      width:fit-content;max-width:100%;font-size:6pt;line-height:1.25;
+      text-align:right;overflow-wrap:anywhere;word-break:break-word;
     }
-    .hero .contact li svg{display:none;}
-    .hero .contact li.tel{align-items:flex-end;}
+    /* em sizing: the icon follows the contact text size at every breakpoint */
+    .hero .contact li svg{
+      display:block;width:1.15em;height:1.15em;margin:0;
+      flex:none;align-self:center;fill:var(--accent-light);opacity:.9;
+    }
+    .hero .contact li.tel{align-items:center;}
     .hero .contact li a,.hero .contact li .tel-lines{overflow-wrap:anywhere;word-break:break-word;}
     /* Japanese mobile: drop the Latin reading, keep the desktop version intact */
     html[lang="ja"] .reading-en{display:none;}
@@ -640,13 +645,17 @@
     .hero .hero-right a.langlink{font-size:6.5px;padding:1px 2px;letter-spacing:0;}
     .hero .contact li{font-size:4.6pt;line-height:1;}
   }
-  /* very narrow phones: the left half stacks the photo above the text,
-     which frees ~100px on the right; every left-hand size stays unchanged */
-  @media screen and (max-width:350px){
+  /* very narrow phones (up to 370px): the right strip would be only 17-36px
+     wide, too narrow for an icon plus the contact text. The photo moves above
+     the name, freeing ~100px; every left-hand size stays unchanged. */
+  @media screen and (max-width:370px){
     .hero-left{flex-direction:column;align-items:flex-start;gap:8px;}
-    .hero .hero-right{left:216px;width:auto;bottom:15px;}
+    .hero .hero-right{width:calc(100% - 218px);bottom:15px;}
     .hero .contact li{font-size:7pt;line-height:1.3;}
   }
+
+
+
 
 
 
