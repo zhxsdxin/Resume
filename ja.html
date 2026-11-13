@@ -454,6 +454,12 @@
   /* ---------- Print ---------- */
   @page{size:A4;margin:10mm 0;}
   @media print{
+    /* always print backgrounds (colours, gradient hero, profile photo) even when
+       the browser's "background graphics" checkbox is left off */
+    html,body,body *{
+      -webkit-print-color-adjust:exact!important;
+      print-color-adjust:exact!important;
+    }
     body{background:#fff;font-size:10pt;}
     .toolbar{display:none;}
     .sheet{
@@ -469,7 +475,6 @@
     .qr-circle .qr{display:none!important;}
     .qr-circle .qr-wm{display:none!important;}
     .qr-cap{display:none!important;}
-    .qr-circle{print-color-adjust:exact;-webkit-print-color-adjust:exact;}
   }
 
 
@@ -574,23 +579,25 @@
     html{-webkit-text-size-adjust:100%;}
     body{background:#fff;font-size:10.5pt;overflow-x:hidden;}
     .sheet{width:100%;min-height:0;margin:0;padding:14px 14px 30px;box-shadow:none;border-radius:0;}
-    .hero{flex-direction:column;align-items:center;text-align:center;gap:14px;padding:18px 14px 16px;}
-    .hero-left{flex-direction:column;align-items:center;text-align:center;gap:11px;}
-    .qr-profile{align-items:center;}
-    .qr-circle{width:108px;height:108px;}
+    .hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:12px 10px;}
+    .hero-left{gap:8px;min-width:0;}
+    .qr-circle{width:66px;height:66px;}
     .qr-circle .qr{display:none;}
-    .qr-circle .qr svg{width:74px;height:74px;}
-    .hero h1{font-size:22pt;letter-spacing:.02em;}
-    .hero .cn-name{font-size:11pt;letter-spacing:.12em;}
-    .hero .tagline{font-size:8.5pt;letter-spacing:.1em;}
-    .hero .hero-meta{font-size:8pt;line-height:1.7;}
+    .qr-cap{display:none;}
+    .qr-circle .xz-badge{width:18px;height:18px;font-size:7px;}
+    .hero h1{font-size:14pt;letter-spacing:0;}
+    .hero .cn-name{font-size:8.5pt;letter-spacing:.06em;}
+    .hero .tagline{font-size:7pt;letter-spacing:.04em;}
+    .hero .hero-meta{font-size:6.4pt;line-height:1.45;}
     .hero .hero-meta .meta-dob{display:block;}
     .hero .hero-meta .meta-sep{display:none;}
-    .hero .hero-meta .meta-visa{display:block;margin-top:2px;}
-    .hero .hero-right{align-items:center;gap:9px;}
-    .langlink{align-self:center;}
-    .contact{text-align:center;font-size:8.8pt;}
-    .contact li,.contact li.tel{justify-content:center;}
+    .hero .hero-meta .meta-visa{display:block;margin-top:1px;white-space:nowrap;}
+    .hero-right{gap:4px;min-width:0;}
+    .hero-right a.langlink{font-size:8px;padding:2px 6px;border-radius:8px;}
+    .contact{font-size:6.4pt;line-height:1.3;}
+    .contact li{margin:0 0 3px;gap:0;justify-content:flex-end;}
+    .contact li svg{display:none;}
+    .contact li.tel{align-items:flex-start;}
     .profile{font-size:9.4pt;}
     .stats-strip{grid-template-columns:repeat(2,1fr);}
     .job-head{flex-wrap:wrap;gap:2px 10px;}
@@ -602,8 +609,19 @@
     .sec-title{font-size:9pt;letter-spacing:.1em;}
   }
   @media screen and (max-width:420px){
-    .hero h1{font-size:18pt;letter-spacing:.01em;}
+    .hero h1{font-size:12.5pt;letter-spacing:0;}
   }
+  /* very narrow phones: stack the two halves so nothing overlaps */
+  @media screen and (max-width:350px){
+    .hero{grid-template-columns:minmax(0,1fr);gap:8px;}
+    .hero-right{align-items:flex-end;}
+  }
+
+
+
+
+
+
 
 
 
@@ -648,6 +666,8 @@
     transition:background .12s ease,color .12s ease;
   }
   .langlink:hover{background:#fff;color:var(--accent);}
+  .langlink::after{content:" →";}
+  @media screen and (max-width:760px){.langlink::after{content:"";}}
   @media print{.langlink{display:none;}}
   /* end language switch */
 </style>
@@ -655,7 +675,7 @@
 <body>
 
 <div class="toolbar">
-  <span class="hint">A4 · 印刷は Chrome / Edge、倍率 100%<b>、「背景のグラフィック」を有効に</b></span>
+  <span class="hint">A4 · 印刷は Chrome / Edge、倍率 100%、背景は既定で有効</span>
   <div class="swatches" title="点击切换配色">
     <span class="slbl">配色</span>
     <input type="radio" name="pal" id="pal-classic" class="pal-toggle">
@@ -718,7 +738,7 @@
       </div>
     </div>
     <div class="hero-right">
-      <a class="langlink" href="index.html">English →</a>
+      <a class="langlink" href="index.html">English</a>
       <ul class="contact">
       <li>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4.2-8 5-8-5V6l8 5 8-5v2.2z"/></svg>
@@ -3645,6 +3665,7 @@ var qrcode = function() {
       }
     });
   }
+
 })();
 
 </script>
