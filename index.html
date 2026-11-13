@@ -776,6 +776,11 @@
 
 
 
+
+
+
+
+
   /* ---------- Language switch ---------- */
   .hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
   .langlink{
@@ -3823,10 +3828,11 @@ var qrcode = function() {
   })();
 
   /* ---- cinematic avatar VFX -----------------------------------------------
-     Portrait -> organic ash disintegration -> energy vortex -> matrix rebuild.
+     Portrait -> silhouette-first ash disintegration -> energy vortex ->
+     fragments snapping onto the QR modules -> crisp matrix.
      One canvas inside .avatar-clip paints every effect, so the surrounding
-     page never moves. rAF runs only during the two 1.5s transitions; the two
-     5s holds are pure layer opacity, so idle cost is zero.
+     page never moves. rAF runs only during the two 3s transitions; the two
+     10s holds are pure layer opacity, so idle cost is zero.
      The final code is drawn from QR_DATA.cells (the real source matrix) and the
      canvas is fully cleared before the QR hold begins. */
   (function(){
@@ -3840,10 +3846,12 @@ var qrcode = function() {
     if(!ctx) return;
 
     var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    var CYCLE = 13000, A = 5000, B = 6500, C = 11500;  // portrait / p2q / qr / q2p
+    /* half speed: 10s portrait / 3s transition / 10s QR / 3s transition */
+    var CYCLE = 26000, A = 10000, B = 13000, C = 23000;
     var t0 = performance.now();
     var S = 0, DPR = 1, img = null, sample = null, QT = null;
-    var P = [], dust = [], glow = null, raf = 0, timer = 0;
+    var P = [], CELLS = [], dust = [], glow = null, raf = 0, timer = 0;
+    var CG = 32;                       /* grid used to clip the intact portrait */
 
     function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
     function ss(a,b,v){ var t=clamp((v-a)/(b-a),0,1); return t*t*(3-2*t); }
@@ -3884,8 +3892,79 @@ var qrcode = function() {
       }
       return {list:out,box:box,off:off,cell:cell};
     }
+    /* Read the subject outline out of the portrait itself. The backdrop is a
+       bright wall and the subject is darker, so a luminance split plus a
+       majority filter and border-connected hole filling yields the head-and-
+       shoulders silhouette. A two-pass chamfer transform then gives each pixel
+       its distance to that outline. No external vision dependency. */
+    function contourField(){
+      if(!sample) return null;
+      var W=sample.width, H=sample.height, d=sample.data;
+      var fg=new Uint8Array(W*H);
+      for(var y=0;y<H;y++) for(var x=0;x<W;x++){
+        var k=(y*W+x)*4;
+        var lum=0.299*d[k]+0.587*d[k+1]+0.114*d[k+2];
+        fg[y*W+x]=lum<205?1:0;
+      }
+      for(var pass=0;pass<2;pass++){
+        var cp=fg.slice();
+        for(var yy=1;yy<H-1;yy++) for(var xx=1;xx<W-1;xx++){
+          var s=0;
+          for(var dy=-1;dy<=1;dy++) for(var dx=-1;dx<=1;dx++) s+=cp[(yy+dy)*W+xx+dx];
+          fg[yy*W+xx]=s>=5?1:0;
+        }
+      }
+      /* flood the exterior through the image border; anything still unmarked
+         is a hole inside the silhouette (eyes, collar) and gets closed */
+      var ext=new Uint8Array(W*H), stack=[], sp=0;
+      function seed(x,y){ var id=y*W+x; if(!fg[id] && !ext[id]){ ext[id]=1; stack.push(id); } }
+      for(var x0=0;x0<W;x0++){ seed(x0,0); seed(x0,H-1); }
+      for(var y0=0;y0<H;y0++){ seed(0,y0); seed(W-1,y0); }
+      while(sp<stack.length){
+        var id=stack[sp++], ry=(id/W)|0, rx=id-ry*W, nb;
+        if(rx>0){   nb=id-1; if(!fg[nb]&&!ext[nb]){ext[nb]=1;stack.push(nb);} }
+        if(rx<W-1){ nb=id+1; if(!fg[nb]&&!ext[nb]){ext[nb]=1;stack.push(nb);} }
+        if(ry>0){   nb=id-W; if(!fg[nb]&&!ext[nb]){ext[nb]=1;stack.push(nb);} }
+        if(ry<H-1){ nb=id+W; if(!fg[nb]&&!ext[nb]){ext[nb]=1;stack.push(nb);} }
+      }
+      for(var q=0;q<W*H;q++) if(!fg[q] && !ext[q]) fg[q]=1;
+      var dist=new Float32Array(W*H), INF=1e4;
+      for(var q=0;q<W*H;q++) dist[q]=INF;
+      for(var y2=1;y2<H-1;y2++) for(var x2=1;x2<W-1;x2++){
+        var id=y2*W+x2, f=fg[id];
+        if((f && (!fg[id-1]||!fg[id+1]||!fg[id-W]||!fg[id+W])) ||
+           (!f && (fg[id-1]||fg[id+1]||fg[id-W]||fg[id+W]))) dist[id]=0;
+      }
+      for(var y3=1;y3<H-1;y3++) for(var x3=1;x3<W-1;x3++){
+        var a=y3*W+x3;
+        dist[a]=Math.min(dist[a],dist[a-1]+1,dist[a-W]+1,dist[a-W-1]+1.41,dist[a-W+1]+1.41);
+      }
+      for(var y4=H-2;y4>=1;y4--) for(var x4=W-2;x4>=1;x4--){
+        var b=y4*W+x4;
+        dist[b]=Math.min(dist[b],dist[b+1]+1,dist[b+W]+1,dist[b+W-1]+1.41,dist[b+W+1]+1.41);
+      }
+      return {W:W,H:H,fg:fg,dist:dist};
+    }
+    /* The outline is released first, the core of the silhouette last; the
+       backdrop follows just behind. Jitter is keyed to normalised coordinates
+       so the clip grid and the particle grid agree on the same ragged edge. */
+    function releaseAt(CF,i,j,G){
+      var ed=0.55, inside=false;
+      if(CF){
+        var cx=clamp(Math.floor(i/G*CF.W),0,CF.W-1);
+        var cy=clamp(Math.floor(j/G*CF.H),0,CF.H-1);
+        var ci=cy*CF.W+cx;
+        inside=!!CF.fg[ci];
+        ed=clamp(CF.dist[ci]/20,0,1);
+      }
+      var r = inside ? (0.03+0.40*ed) : (0.10+0.30*ed);
+      r += (hash(Math.floor(i/G*64)+53,Math.floor(j/G*64)+7)-0.5)*0.08;
+      return clamp(r,0.01,0.52);
+    }
     function build(){
-      glow=makeGlow(); QT=targets(); P=[];
+      glow=makeGlow(); QT=targets();
+      var CF=contourField();
+      P=[]; CELLS=[];
       var G=48;                                      // 2304 fragments
       for(var j=0;j<G;j++) for(var i=0;i<G;i++){
         var hx=(i+0.5)/G*S, hy=(j+0.5)/G*S, col='#8496a8';
@@ -3897,14 +3976,17 @@ var qrcode = function() {
         }
         var t = QT.list.length ? QT.list[(i*G+j)%QT.list.length] : {x:S/2,y:S/2};
         P.push({
-          hx:hx, hy:hy, tx:t.x+(hash(j,i)-0.5)*0.9, ty:t.y+(hash(i+7,j)-0.5)*0.9,
+          hx:hx, hy:hy, tx:t.x+(hash(j,i)-0.5)*0.6, ty:t.y+(hash(i+7,j)-0.5)*0.6,
           z:hash(i+3,j+5), size:0.6+hash(i+11,j)*2.0,
           seed:hash(i+19,j+23), shape:hash(i,j+31),
           c0:col,
           c1:hash(i,j)>0.62 ? '#e8b56a' : (hash(i,j+41)>0.68?'#9db6d4':'#b9a689'),
+          rel0:releaseAt(CF,i,j,G), ph:(j/G)*10+(i/G)*7,
           x:hx, y:hy, vx:0, vy:0
         });
       }
+      for(var cj=0;cj<CG;cj++) for(var ci=0;ci<CG;ci++)
+        CELLS.push({r:releaseAt(CF,ci,cj,CG), ph:(cj/CG)*10+(ci/CG)*7});
       dust=[];
       for(var k=0;k<28;k++) dust.push({x:hash(k,1)*S,y:hash(k,2)*S,z:hash(k,3),s:hash(k,4)});
     }
@@ -3929,13 +4011,10 @@ var qrcode = function() {
       img.src=mm[2];
     }
 
-    /* irregular, continuously evolving dissolution front advancing from one edge */
-    function front(y,u,t){
-      var base=ss(0.02,0.58,u)*S*1.30 - S*0.14;
-      return base + Math.sin(y*0.055+t*1.6)*S*0.055
-                  + Math.sin(y*0.135-t*2.2)*S*0.030
-                  + (hash(Math.floor(y/5),Math.floor(t*7))-0.5)*S*0.05;
-    }
+    /* A slow time wobble keeps the silhouette boundary alive. The same phase
+       key drives both the clip grid and the fragments, so they always agree on
+       which pixels are still intact. */
+    function gate(r,ph,t){ return r + Math.sin(t*1.9+ph)*0.022; }
     function atmosphere(u,t,dir){
       var g=ctx.createRadialGradient(S*0.5,S*0.45,S*0.05,S*0.5,S*0.5,S*0.72);
       g.addColorStop(0,'rgba(24,34,46,0.92)'); g.addColorStop(1,'rgba(8,13,20,0.98)');
@@ -3967,43 +4046,48 @@ var qrcode = function() {
       /* The atmosphere resolves into a clean white plate after the particles
          are gone, so handing over to the DOM SVG has no visible pop. The
          reverse transition starts from that same white plate. */
-      var wash = dir==='p2q' ? ss(0.84,1,u) : (1-ss(0,0.20,u));
+      var wash = dir==='p2q' ? ss(0.76,0.94,u) : (1-ss(0,0.20,u));
       if(wash>0.001){
         ctx.save(); ctx.globalAlpha=wash; ctx.fillStyle='#ffffff';
         ctx.fillRect(0,0,S,S); ctx.restore();
       }
     }
     function portraitLayer(u,t,dir){
-      var alpha = dir==='p2q' ? (1-ss(0.46,0.74,u)) : ss(0.76,1,u);
-      if(alpha<=0.001 || !img) return;
-      ctx.save(); ctx.globalAlpha=alpha;
-      if(dir==='p2q'){
-        ctx.beginPath(); ctx.moveTo(S,0);
-        for(var y=0;y<=S;y+=3) ctx.lineTo(clamp(front(y,u,t),0,S),y);
-        ctx.lineTo(S,S); ctx.closePath(); ctx.clip();
+      if(!img) return;
+      if(dir==='q2p'){
+        var al=ss(0.76,1,u);
+        if(al<=0.001) return;
+        ctx.save(); ctx.globalAlpha=al; ctx.drawImage(img,0,0,S,S); ctx.restore();
+        return;
       }
+      /* keep only the cells the silhouette erosion has not reached yet */
+      var cw=S/CG, any=false;
+      ctx.save(); ctx.beginPath();
+      for(var j=0;j<CG;j++) for(var i=0;i<CG;i++){
+        var c=CELLS[j*CG+i];
+        if(u < gate(c.r,c.ph,t)){ ctx.rect(i*cw,j*cw,cw+0.6,cw+0.6); any=true; }
+      }
+      if(!any){ ctx.restore(); return; }
+      ctx.clip();
       ctx.drawImage(img,0,0,S,S);   /* source is square -> equivalent to cover */
       ctx.restore();
-      if(dir==='p2q' && u>0.02 && u<0.66){
-        var ea=Math.sin(clamp(u/0.66,0,1)*Math.PI)*0.55;
-        ctx.save(); ctx.globalCompositeOperation='lighter';
-        ctx.strokeStyle='rgba(240,178,92,'+ea+')'; ctx.lineWidth=1.6;
-        ctx.beginPath();
-        for(var y2=0;y2<=S;y2+=3){
-          var fx=clamp(front(y2,u,t),0,S);
-          if(y2===0) ctx.moveTo(fx,y2); else ctx.lineTo(fx,y2);
-        }
-        ctx.stroke(); ctx.restore();
-      }
+    }
+    /* The vortex condenses into a white digital plate. Fragments then land on
+       it as dark modules, so the code is visibly assembled out of the ash
+       before the crisp matrix takes over. */
+    function plateLayer(u,dir){
+      if(!QT) return;
+      var a = dir==='p2q' ? ss(0.54,0.72,u) : (1-ss(0.14,0.34,u));
+      if(a<=0.001) return;
+      ctx.save(); ctx.globalAlpha=a; ctx.fillStyle='#ffffff';
+      ctx.fillRect(QT.off,QT.off,QT.box,QT.box); ctx.restore();
     }
     /* crisp matrix from the real source; identical geometry to the DOM SVG */
     function matrixLayer(u,dir){
       if(!QR_DATA || !QR_DATA.cells || !QT) return;
-      var a = dir==='p2q' ? ss(0.66,0.90,u) : (1-ss(0.02,0.20,u));
+      var a = dir==='p2q' ? ss(0.70,0.90,u) : (1-ss(0.02,0.18,u));
       if(a<=0.001) return;
-      ctx.save(); ctx.globalAlpha=a;
-      ctx.fillStyle='#fff'; ctx.fillRect(QT.off,QT.off,QT.box,QT.box);
-      ctx.fillStyle='#0d1620';
+      ctx.save(); ctx.globalAlpha=a; ctx.fillStyle='#0d1620';
       for(var i=0;i<QR_DATA.cells.length;i++){
         var rc=QR_DATA.cells[i];
         ctx.fillRect(QT.off+(rc[1]+QR_DATA.pad)*QT.cell,
@@ -4020,24 +4104,25 @@ var qrcode = function() {
       var cx=S*0.5, cy=S*0.5, toQR=(dir==='p2q');
       var wDis,wVor,wAtt;
       if(toQR){
-        wDis=1-ss(0.24,0.52,u);
-        wVor=ss(0.28,0.46,u)*(1-ss(0.62,0.82,u));
-        wAtt=ss(0.66,0.92,u);
+        wDis=1-ss(0.22,0.50,u);
+        wVor=ss(0.28,0.46,u)*(1-ss(0.60,0.80,u));
+        wAtt=ss(0.50,0.78,u);
       }else{
         wAtt=1-ss(0.06,0.26,u);
         wVor=ss(0.20,0.42,u)*(1-ss(0.62,0.84,u));
         wDis=ss(0.60,0.88,u);
       }
       var windX=0.55+0.25*Math.sin(t*0.6), windY=-0.65-0.2*Math.cos(t*0.9);
-      var life=1-ss(0.60,0.84,u);              /* fully gone before the QR hold */
+      var life=1-ss(toQR?0.88:0.74,0.98,u);   /* gone before the QR hold */
+      var snap=toQR ? ss(0.50,0.76,u) : (1-ss(0.12,0.36,u));  /* ash -> QR ink */
       ctx.save();
       for(var i=0;i<P.length;i++){
         var p=P[i];
-        /* release gate follows the irregular dissolution front */
-        var rel = toQR ? clamp((front(p.hy,u,t)-p.hx)/(S*0.10),0,1)
-                       : 1;
-        if(toQR) rel=Math.max(rel,ss(0.44,0.58,u));
+        /* release follows the silhouette outline, not a straight screen edge */
+        var g=gate(p.rel0,p.ph,t);
+        var rel = toQR ? ss(g-0.05,g+0.07,u) : 1;
         if(rel<=0.001) continue;
+        var fresh = toQR ? 1-clamp(Math.abs(u-g)/0.11,0,1) : 0;
         var tx=toQR?p.tx:p.hx, ty=toQR?p.ty:p.hy;
         var c=curl(p.hx/S*3.0,p.hy/S*3.0,t+p.seed*0.4);
         /* A: dissolve - bounded drift along two wind fields + curl */
@@ -4056,14 +4141,14 @@ var qrcode = function() {
         var nudge=S*0.018*(1-wAtt)*rel;
         x+=q.x*nudge; y+=q.y*nudge;
         p.x=x; p.y=y;
-        var born=ss(0,0.06+p.seed*0.10,u);
-        /* staggered lifetimes: fragments keep winking out at different times,
-           so the cloud thins organically instead of vanishing all at once */
-        var expiry=0.46+p.seed*0.34;
-        var span=1-ss(expiry-0.16,expiry,u);
-        /* fragments far behind the erosion front are dimmer (older ash) */
-        var aged=toQR?clamp((front(p.hy,u,t)-p.hx)/(S*0.34),0,1):0;
-        var a=(0.22+p.z*0.78)*rel*born*life*span*(1-0.62*aged);
+        var born=toQR ? ss(0,0.06+p.seed*0.10,u) : 1;
+        /* staggered lifetimes: most fragments survive long enough to land on
+           their QR module, then wink out in waves as the matrix solidifies */
+        var expiry=0.86+p.seed*0.12;
+        var span=1-ss(expiry-0.10,expiry,u);
+        /* fragments released long ago are dimmer (older ash) */
+        var aged=toQR?clamp((u-g)/0.34,0,1):0;
+        var a=(0.22+p.z*0.78)*rel*born*life*span*(1-0.55*aged)*(1+0.7*fresh);
         if(a<=0.01) continue;
         var warm = toQR ? ss(0.06,0.56,u) : (1-ss(0.30,0.80,u));
         var sz=p.size*(0.45+p.z*0.9)*(1+0.45*wVor);
@@ -4080,15 +4165,23 @@ var qrcode = function() {
           ctx.moveTo(x-(windX+c.x*0.5)*streak,y-(windY+c.y*0.5)*streak);
           ctx.lineTo(x,y); ctx.stroke();
         }
-        ctx.globalAlpha=a; ctx.fillStyle=warm>0.5?p.c1:p.c0;
+        ctx.globalAlpha=a*(1-snap*0.90);
+        ctx.fillStyle = fresh>0.35 ? '#f2bb6c' : (warm>0.5?p.c1:p.c0);
         ctx.fillRect(x-w*0.5,y-h*0.5,w,h);
+        /* the fragment settles onto its own QR module as a dark square, so the
+           code is visibly assembled out of the ash before it turns crisp */
+        if(snap>0.02 && QT && QT.list.length){
+          var ix=x+(p.tx-x)*snap, iy=y+(p.ty-y)*snap, mw=QT.cell*1.08;
+          ctx.globalAlpha=Math.min(1,a*snap*1.7); ctx.fillStyle='#0d1620';
+          ctx.fillRect(ix-mw*0.5,iy-mw*0.5,mw+0.2,mw+0.2);
+        }
         /* secondary micro-particle emission */
         if(p.shape>0.78){
           ctx.globalAlpha=a*0.55;
           ctx.fillRect(x+sz*1.1,y-sz*0.7,sz*0.38,sz*0.38);
         }
         /* sparse glowing embers with bloom */
-        if(p.z>0.88 && p.shape>0.42){
+        if(((p.z>0.88 && p.shape>0.42) || fresh>0.72) && snap<0.55){
           ctx.globalCompositeOperation='lighter';
           ctx.globalAlpha=a*0.6;
           ctx.drawImage(glow,x-4,y-4,8,8);
@@ -4101,12 +4194,13 @@ var qrcode = function() {
       if(!S){ resize(); if(!S) return; }
       var t=performance.now()*0.001;
       photo.style.opacity='0'; qrl.style.opacity='0'; cv.style.opacity='1';
-      if(badge) badge.style.opacity = dir==='p2q' ? String(1-ss(0.55,0.78,u)) : String(ss(0.32,0.58,u));
+      if(badge) badge.style.opacity = dir==='p2q' ? String(1-ss(0.50,0.72,u)) : String(ss(0.32,0.58,u));
       ctx.clearRect(0,0,S,S);
       atmosphere(u,t,dir);
       portraitLayer(u,t,dir);
-      matrixLayer(u,dir);
+      plateLayer(u,dir);
       particleLayer(u,t,dir);
+      matrixLayer(u,dir);   /* crisp modules land on top of the settled ash */
     }
     function reset(dir){
       for(var i=0;i<P.length;i++){
