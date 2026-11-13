@@ -667,7 +667,10 @@
      name (the left block is unchanged on any wider / desktop view). The icon
      stack is kept short so the language pill stays in its own top band. */
   @media screen and (max-width:560px){
-    .hero-left{flex-direction:column;align-items:flex-start;gap:8px;text-align:left;}
+    /* keep photo + name side-by-side (do NOT stack below the circle);
+       let the name wrap and reserve a right lane for the icon column */
+    .hero-left{padding-right:56px;}
+    .hero h1{white-space:normal;}
     .contact .c-text{display:none !important;}
     .contact li.c-tel .tel2{display:none !important;}
     .contact li{margin:0;gap:0;}
@@ -678,6 +681,7 @@
   @media screen and (max-width:420px){
     .hero h1{font-size:18pt;letter-spacing:.01em;}
   }
+
 
 
 
