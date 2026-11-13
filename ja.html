@@ -138,6 +138,7 @@
     background:linear-gradient(rgba(255,255,255,.2),rgba(255,255,255,.2)),#fff var(--garf) center 34% / cover no-repeat;padding:0;box-sizing:border-box;
     box-shadow:0 0 0 3px rgba(255,255,255,.65),0 2px 10px rgba(0,0,0,.22);
     cursor:pointer;transition:transform .18s ease,box-shadow .18s ease;perspective:700px;
+    text-decoration:none;color:inherit;display:flex;
   }
   .qr-circle:hover{transform:translateY(-2px) scale(1.16);box-shadow:0 0 0 3px rgba(255,255,255,.9),0 12px 28px rgba(0,0,0,.34);}
   .qr-circle:focus-visible{outline:3px solid #9fc0e8;outline-offset:3px;transform:translateY(-2px) scale(1.16);}
@@ -464,7 +465,11 @@
     .work-timeline .job{break-inside:auto;}
     a{text-decoration:none;}
     .radar-grow{animation:none!important;transform:none!important;}
-    .qr-circle .qr svg{background:#fff;}
+    /* PDF profile: no QR code — keep the Garfield photo and a clickable GitHub link */
+    .qr-circle .qr{display:none!important;}
+    .qr-circle .qr-wm{display:none!important;}
+    .qr-cap{display:none!important;}
+    .qr-circle{print-color-adjust:exact;-webkit-print-color-adjust:exact;}
   }
 
 
@@ -569,19 +574,23 @@
     html{-webkit-text-size-adjust:100%;}
     body{background:#fff;font-size:10.5pt;overflow-x:hidden;}
     .sheet{width:100%;min-height:0;margin:0;padding:14px 14px 30px;box-shadow:none;border-radius:0;}
-    .hero{flex-direction:column;align-items:stretch;gap:14px;padding:16px 14px 15px;}
-    .hero-left{gap:12px;}
-    .qr-circle{width:104px;height:104px;}
+    .hero{flex-direction:column;align-items:center;text-align:center;gap:14px;padding:18px 14px 16px;}
+    .hero-left{flex-direction:column;align-items:center;text-align:center;gap:11px;}
+    .qr-profile{align-items:center;}
+    .qr-circle{width:108px;height:108px;}
     .qr-circle .qr{display:none;}
-    .qr-circle .qr svg{width:72px;height:72px;}
+    .qr-circle .qr svg{width:74px;height:74px;}
     .hero h1{font-size:22pt;letter-spacing:.02em;}
     .hero .cn-name{font-size:11pt;letter-spacing:.12em;}
     .hero .tagline{font-size:8.5pt;letter-spacing:.1em;}
     .hero .hero-meta{font-size:8pt;line-height:1.7;}
-    .hero .hero-right{align-items:flex-start;gap:9px;}
-    .langlink{align-self:flex-start;}
-    .contact{text-align:left;font-size:8.8pt;}
-    .contact li,.contact li.tel{justify-content:flex-start;}
+    .hero .hero-meta .meta-dob{display:block;}
+    .hero .hero-meta .meta-sep{display:none;}
+    .hero .hero-meta .meta-visa{display:block;margin-top:2px;}
+    .hero .hero-right{align-items:center;gap:9px;}
+    .langlink{align-self:center;}
+    .contact{text-align:center;font-size:8.8pt;}
+    .contact li,.contact li.tel{justify-content:center;}
     .profile{font-size:9.4pt;}
     .stats-strip{grid-template-columns:repeat(2,1fr);}
     .job-head{flex-wrap:wrap;gap:2px 10px;}
@@ -595,6 +604,8 @@
   @media screen and (max-width:420px){
     .hero h1{font-size:18pt;letter-spacing:.01em;}
   }
+
+
 
 
 
@@ -681,7 +692,7 @@
   <header class="hero">
     <div class="hero-left">
       <div class="qr-profile">
-        <div class="qr-circle" role="button" tabindex="0" aria-haspopup="dialog" aria-label="Contact QR code">
+        <a class="qr-circle" href="https://zhxsdxin.github.io/Resume/" target="_blank" rel="noopener" aria-haspopup="dialog" aria-label="Contact card — opens resume on GitHub">
           <svg class="qr-wm" viewBox="0 0 124 124" aria-hidden="true">
             <defs>
               <pattern id="qrDots" width="8" height="8" patternUnits="userSpaceOnUse">
@@ -696,14 +707,14 @@
           </svg>
           <div class="qr"></div>
           <span class="xz-badge" aria-hidden="true">XZ</span>
-        </div>
+        </a>
         <span class="qr-cap">タップで名刺を表示</span>
       </div>
       <div>
-        <h1>George <b>Zhang</b></h1>
+        <h1 id="nameH1">George <b>Zhang</b></h1>
         <p class="cn-name">張 鑫（<span class="reading">チョウ キン / Zhang Xin</span>）</p>
         <p class="tagline">IT運用エンジニア</p>
-        <p class="hero-meta"><b>生年</b> 平成8年9月<span class="dot">·</span><b>在留資格</b> <span class="nowrap">高度専門職1号ロ</span><span class="dot">·</span>2030年10月まで</p>
+        <p class="hero-meta"><span class="meta-dob"><b>生年</b> 平成8年9月</span><span class="meta-sep dot">·</span><span class="meta-visa"><b>在留資格</b> <span class="nowrap">高度専門職1号ロ</span><span class="dot">·</span>2030年10月まで</span></p>
       </div>
     </div>
     <div class="hero-right">
@@ -3600,7 +3611,7 @@ var qrcode = function() {
       modal.setAttribute('aria-hidden', 'true');
       circle.focus();
     }
-    circle.addEventListener('click', openModal);
+    circle.addEventListener('click', function(ev){ ev.preventDefault(); openModal(); });
     circle.addEventListener('keydown', function(ev){
       if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); openModal(); }
     });
@@ -3615,6 +3626,24 @@ var qrcode = function() {
   /* auto-flip the profile between QR and Garfield image every 5s on desktop/web */
   if(window.matchMedia && window.matchMedia('(min-width:761px)').matches){
     setInterval(function(){ if(circle) circle.classList.toggle('flipped'); }, 5000);
+  }
+
+  /* triple-click the name to export PDF */
+  var nameH1 = document.getElementById('nameH1');
+  if(nameH1){
+    var geoClicks = 0, geoTimer = null;
+    nameH1.style.cursor = 'pointer';
+    nameH1.title = 'Triple-click to export PDF';
+    nameH1.addEventListener('click', function(){
+      geoClicks++;
+      if(geoTimer) clearTimeout(geoTimer);
+      geoTimer = setTimeout(function(){ geoClicks = 0; }, 600);
+      if(geoClicks >= 3){
+        geoClicks = 0;
+        if(geoTimer) clearTimeout(geoTimer);
+        window.print();
+      }
+    });
   }
 })();
 
