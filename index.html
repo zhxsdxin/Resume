@@ -579,8 +579,8 @@
     html{-webkit-text-size-adjust:100%;}
     body{background:#fff;font-size:10.5pt;overflow-x:hidden;}
     .sheet{width:100%;min-height:0;margin:0;padding:14px 14px 30px;box-shadow:none;border-radius:0;}
-    .hero{flex-direction:column;align-items:stretch;gap:10px;padding:16px 14px 15px;}
-    .hero-left{gap:12px;}
+    .hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:stretch;padding:16px 14px 15px;}
+    .hero-left{flex-direction:column;align-items:flex-start;gap:8px;}
     .qr-circle{width:104px;height:104px;}
     .qr-circle .qr{display:none;}
     .qr-circle .qr svg{width:72px;height:72px;}
@@ -591,7 +591,7 @@
     .hero .hero-meta .meta-dob{display:block;}
     .hero .hero-meta .meta-sep{display:none;}
     .hero .hero-meta .meta-visa{display:block;margin-top:2px;}
-    .hero-right{align-items:flex-end;gap:5px;}
+    .hero-right{align-items:flex-end;justify-content:space-between;gap:6px;}
     .hero-right a.langlink{font-size:9px;padding:3px 9px;border-radius:10px;}
     .contact{font-size:7.6pt;line-height:1.35;}
     .contact li{margin:0 0 3px;gap:5px;justify-content:flex-end;}
@@ -610,10 +610,16 @@
   @media screen and (max-width:420px){
     .hero h1{font-size:18pt;letter-spacing:.01em;}
   }
-  /* very narrow phones: stack the photo above the text instead of shrinking it */
+  /* very narrow phones: tighten the right column, keep the left untouched */
   @media screen and (max-width:350px){
-    .hero-left{flex-direction:column;align-items:flex-start;gap:8px;}
+    .hero{gap:6px;padding:14px 10px 13px;}
+    .hero .tagline{letter-spacing:0;}
+    .contact{font-size:7pt;}
+    .contact li{gap:0;}
+    .contact li svg{display:none;}
   }
+
+
 
 
 
