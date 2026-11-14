@@ -809,6 +809,14 @@
 
 
 
+
+
+
+
+
+
+
+
   /* ---------- Language switch ---------- */
   .hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
   .langlink{
@@ -3858,9 +3866,9 @@ var qrcode = function() {
 
   /* ---- Cinematic organic ash disintegration -> particle QR -----------------
      Fixed portrait, fixed QR matrix, one deterministic particle set, one 12s
-     time axis. Layer 1 = the untouched DOM SVG (the real scannable code).
-     Layer 2 = the 2D canvas (atmosphere, white plate, crisp module duplicate).
-     Layer 3 = a WebGL canvas (procedural erosion + GPU point-sprite debris).
+     time axis. The QR is painted from the cached module matrix on the 2D
+     canvas; the DOM SVG is never shown. The WebGL canvas carries the erosion
+     and the GPU point-sprite debris on top of the same white stage.
      No external library: this page stays a single offline HTML file. */
   (function(){
     var circle = document.querySelector('.qr-circle');
@@ -4376,13 +4384,10 @@ var qrcode = function() {
       '  v_trail=vec3(td,trailLen);',
       '  v_pxcat=vec2(px,cat);',
       '  v_warm=warm;',
-      /* Once the vector SVG is almost opaque the ash tiles step back. The
-         handover then finishes on the exact vector matrix, with no extra
-         half-pixel fringe and no visible switch at the QR hold. The reverse
-         starts from that same crisp code. */
-      '  float qF=SS(0.94,1.0,d);',
-      '  float tileFade=1.0-SS(0.90,1.0,qF);',
-      '  v_fix=fix*tileFade;',
+      /* The ink modules persist at the lock: no separate image ever fades in on
+         top, so the gathered QR simply stays put instead of stepping back. The
+         drifting ash still disperses on its own life curve. */
+      '  v_fix=fix;',
       '  v_mat=a_gate.w;',
       '}'
     ].join('\n');
@@ -4753,15 +4758,14 @@ var qrcode = function() {
         if(fix>0.001 && QT){
           /* one complete real module; the four grains coincide and the block
              covers the full module (slightly oversized) so the converged QR is
-             geometrically identical to the vector SVG and no half-pixel seam is
-             left for the SVG to fill later. The block also deepens from grey to
-             ink as it locks, so the QR darkens on its own without the real
-             vector image being layered on top. */
+             geometrically exact and has no half-pixel seam. The block also
+             deepens from grey to ink as it locks, so the QR darkens on its own
+             and no separate image is layered on top. */
           var ix=x+(qp.x-x)*fix, iy=y+(qp.y-y)*fix;
           var mw=QT.cell+0.06;
           var deepen=ss(0,1,fix);
           var cr=Math.round(220+(13-220)*deepen), cg=Math.round(215+(22-215)*deepen), cb=Math.round(202+(32-202)*deepen);
-          ctx.globalAlpha=fix*tileFade; ctx.fillStyle='rgb('+cr+','+cg+','+cb+')';
+          ctx.globalAlpha=fix; ctx.fillStyle='rgb('+cr+','+cg+','+cb+')';
           ctx.fillRect(ix-mw*0.5,iy-mw*0.5,mw,mw);
         }
       }
@@ -5018,20 +5022,27 @@ var qrcode = function() {
       }
       ctx.restore();
     }
-    /* The ash tiles carry the exact module geometry. During the fixing pass
-       the real vector SVG fades in underneath them on the same white stage:
-       it closes the remaining sub-pixel seams and sharpens the code, but it
-       is never a second, different-looking QR. The same curve runs backwards
-       for the break-up, so the reverse starts from the exact vector code and
-       never shows a "particle version" before the ash begins to move. */
+    /* The ash tiles carry the exact module geometry and are the only thing
+       that forms the QR. No vector image is faded in on top, so the assemble,
+       the hold and the break-up are one continuous surface. The same curve
+       runs backwards, so the reverse starts from the exact QR the ash built
+       and never swaps in a different picture. */
     function renderTransition(u,t,dir){
       if(!S){ resize(); if(!S) return; }
       var d=dir==='p2q'?u:1-u;
       var qFade=ss(0.94,1.0,d);
+      /* At the lock the crisp canvas QR is shown on its own; the GL ash has
+         already stepped back, so there is no second picture to swap in. */
       if(d>=0.995){ holdQR(t); return; }
       setLayers('fx');
-      qrl.style.opacity=String(qFade);
       if(badge) badge.style.opacity=String(dir==='p2q'?1-ss(0.50,0.74,u):ss(0.34,0.62,u));
+      /* The crisp canvas QR is painted underneath, materialising with the same
+         fix curve the ash uses, so the composite is a QR at every instant. The
+         GL ash then steps back only in the final sliver, leaving the scannable
+         canvas code with no hard swap. The same curves run backwards. */
+      var fixA=ss(0.62,0.94,d);
+      var glFade=1-ss(0.94,1.0,d);
+      if(glCv) glCv.style.opacity=String(glFade);
       ctx.clearRect(0,0,S,S);
       atmosphere(u,t,dir,qFade);
       if(glOK){
@@ -5043,8 +5054,9 @@ var qrcode = function() {
         renderCPUParticles(u,t,dir);
       }
       drawQRDust(t,qFade);
+      if(fixA>0.001) paintQR(ctx,fixA);
     }
-    /* ---- holds: Layer 1 is the real SVG; Layer 2 is decorative ash ------ */
+    /* ---- holds: the QR is painted on the 2D canvas; no vector image ------ */
     function holdAvatar(t){
       setLayers('avatar');
       ctx.clearRect(0,0,S,S);
@@ -5079,19 +5091,63 @@ var qrcode = function() {
       }
       ctx.restore();
     }
+    /* Snap a CSS-px coordinate to the device pixel grid so the painted QR
+       has hard, scannable edges (no sub-pixel anti-aliasing blur). */
+    function rpx(v){ return Math.round(v*DPR)/DPR; }
+    /* The held / reduced-motion QR is painted straight from the cached module
+       matrix on the 2D canvas. No vector image is ever shown, so the ash
+       surface and the final code are the exact same picture. */
+    function paintQR(c, alpha){
+      if(!QT || !QR_DATA || !QR_DATA.cells) return;
+      var pad=QR_DATA.pad, cell=QT.cell, off=QT.off, box=QT.box;
+      var mw=cell+0.06;                       /* matches the GL ink block size */
+      c.save();
+      c.globalAlpha=(alpha==null)?1:alpha;
+      c.fillStyle='#ffffff';                  /* white quiet zone + backing */
+      c.fillRect(rpx(off),rpx(off),rpx(box),rpx(box));
+      c.fillStyle=PAL.ink;
+      for(var i=0;i<QR_DATA.cells.length;i++){
+        var rc=QR_DATA.cells[i];
+        var cx=off+(rc[1]+pad+0.5)*cell, cy=off+(rc[0]+pad+0.5)*cell;
+        var x=rpx(cx-mw*0.5), y=rpx(cy-mw*0.5);
+        c.fillRect(x,y,rpx(cx+mw*0.5)-x,rpx(cy+mw*0.5)-y);
+      }
+      c.restore();
+    }
+    /* Show only the 2D canvas QR; the vector SVG stays hidden (opacity 0). */
+    function showCanvasQR(){
+      photo.style.opacity='0';
+      qrl.style.opacity='0';
+      if(badge) badge.style.opacity='0';
+      cv.style.opacity='1';
+      if(glCv) glCv.style.opacity='0';
+      lastMode='canvasQR';
+    }
+    /* The held QR is the crisp canvas image painted from the cached matrix. The
+       GL/CPU ash converges to the exact same geometry and is cross-faded out in
+       the final sliver, so the hand-off reads as the code settling - no hard
+       swap, and the resting code is always the scannable canvas image. */
     function holdQR(t){
-      setLayers('qr');
+      showCanvasQR();
       ctx.clearRect(0,0,S,S);
+      paintQR(ctx,1);
       drawQRDust(t,1);
     }
+    /* Reduced-motion fallback: the canvas layers are display:none in this mode,
+       so the static SVG QR is the visible, scannable code. This is the
+       accessibility path, not the animated transition, so the "no vector image"
+       rule does not apply here. */
     function renderReduced(){
       var e=currentElapsed();
       var showQR=(e>=BOUNDS[3]&&e<BOUNDS[4]);
-      cv.style.opacity='0'; ctx.clearRect(0,0,S,S);
-      if(glCv) glCv.style.opacity='0';
-      photo.style.opacity=showQR?'0':'1';
-      qrl.style.opacity=showQR?'1':'0';
-      if(badge) badge.style.opacity=showQR?'0':'1';
+      if(showQR){
+        photo.style.opacity='0'; qrl.style.opacity='1';
+        if(badge) badge.style.opacity='0';
+      }else{
+        photo.style.opacity='1'; qrl.style.opacity='0';
+        if(badge) badge.style.opacity='1';
+      }
+      cv.style.opacity='0'; if(glCv) glCv.style.opacity='0';
       lastMode='';
     }
     /* ---- one time axis --------------------------------------------------- */
