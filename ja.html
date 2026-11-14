@@ -807,6 +807,7 @@
 
 
 
+
   /* ---------- Language switch ---------- */
   .hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
   .langlink{
@@ -3904,7 +3905,7 @@ var qrcode = function() {
        share the exact module geometry of the frozen SVG, so the particle QR
        and the scannable QR are the same image at the end of the assemble. */
     var QR_SUB = 2;
-    var img = null, grayImg = null, sample = null, QT = null, CF = null, glow = null;
+    var img = null, grayImg = null, sample = null, QT = null, CF = null;
     var P = [], dust = [], motes = [], qrDust = [], rim = [];
     var t0 = performance.now(), skipped = 0, holdStart = 0, offset = 0;
     var lastHold = 0, lastMode = '', raf = 0;
@@ -4016,16 +4017,6 @@ var qrcode = function() {
         d[o+3]=clamp((edge-r)/0.34,0,1)*255;
       }
       x.putImageData(id,0,0); plateMask=c;
-    }
-    function makeGlow(){
-      var g=document.createElement('canvas'); g.width=g.height=32;
-      var c=g.getContext('2d');
-      var rg=c.createRadialGradient(16,16,0,16,16,16);
-      rg.addColorStop(0,'rgba(255,228,172,0.95)');
-      rg.addColorStop(0.35,'rgba(232,170,86,0.34)');
-      rg.addColorStop(1,'rgba(232,170,86,0)');
-      c.fillStyle=rg; c.fillRect(0,0,32,32);
-      return g;
     }
     function gridSize(){
       var small=Math.min(window.innerWidth,window.innerHeight)<600;
@@ -4310,13 +4301,15 @@ var qrcode = function() {
       /* Position settles first. A module is only ~6 device px wide, so even a
          1% drift would leave the four quadrant tiles misaligned; locking the
          geometry early lets the rest of the gather be pure ink / opacity. */
-      '  float wAtt=SS(0.54,0.80,d);',
-      '  float snap=SS(0.60,0.94,d);',
+      /* Position and tile size lock together, early enough that the ink pass
+         never has to wait for a last-minute alignment jump. */
+      '  float wAtt=SS(0.42,0.66,d);',
+      '  float snap=SS(0.68,0.98,d);',
       /* Grains set into their own quadrant over a long, slightly staggered
          window. Fixing is independent of the ash fade, so the gathered QR
          stays fully opaque instead of dissolving while it is being printed. */
       '  float jit=fract(sin(seed*91.7)*43758.5453)*0.06;',
-      '  float fix=SS(0.60+jit,min(0.94+jit,0.96),d);',
+      '  float fix=SS(0.68+jit,min(0.98+jit,0.99),d);',
       '  float life=1.0-SS(0.94,1.0,d);',
       '  float gate=g+sin(u_time*1.9+ph)*0.018;',
       '  float rel=SS(gate-0.035,gate+0.055,d);',
@@ -4372,7 +4365,7 @@ var qrcode = function() {
          fixing pass only inks an already-correct square. Growing the sprite
          together with the ink made every module look like a shrinking tile
          and produced a visible grid in the middle of the gather. */
-      '  float pxLock=SS(0.52,0.72,d);',
+      '  float pxLock=SS(0.58,0.74,d);',
       '  px=mix(px,u_cell+2.0,pxLock);',
       '  gl_PointSize=px;',
       '  gl_Position=vec4(pos.x*2.0-1.0,1.0-pos.y*2.0,0.0,1.0);',
@@ -4691,7 +4684,7 @@ var qrcode = function() {
       var toQR=(dir==='p2q');
       var d=toQR?u:1-u;
       var qF=ss(0.80,0.985,d), tileFade=1-ss(0.90,1.0,qF);
-      var wAtt=ss(0.54,0.80,d), snap=ss(0.60,0.94,d), life=1-ss(0.94,1.0,d);
+      var wAtt=ss(0.42,0.66,d), snap=ss(0.68,0.98,d), life=1-ss(0.94,1.0,d);
       var WL=Math.sqrt(0.86*0.86+0.52*0.52);
       var W={x:0.86/WL,y:-0.52/WL}, N={x:0.52/WL,y:0.86/WL};
       ctx.save();
@@ -4701,7 +4694,7 @@ var qrcode = function() {
       for(var i=0;i<P.length;i+=step){
         var p=P[i], ap=p.avatarPosition, qp=p.qrPosition;
         var jit=fract(Math.sin(p.randomSeed*91.7)*43758.5453)*0.06;
-        var fix=ss(0.60+jit,Math.min(0.94+jit,0.96),d);
+        var fix=ss(0.68+jit,Math.min(0.98+jit,0.99),d);
         var gate=p.release+Math.sin(t*1.9+p.phase)*0.018;
         var rel=ss(gate-0.035,gate+0.055,d);
         if(rel<=0.001) continue;
@@ -4828,7 +4821,7 @@ var qrcode = function() {
       };
     }
     function build(){
-      glow=makeGlow(); makePlateMask(); QT=targets(); CF=contourField(); G=gridSize();
+      makePlateMask(); QT=targets(); CF=contourField(); G=gridSize();
       uploadMask();
       P=[]; dust=[]; motes=[]; qrDust=[]; rim=[];
       /* QR_SUB^2 ash grains per dark module. All of them come from the portrait
@@ -5050,10 +5043,11 @@ var qrcode = function() {
         var d=motes[k];
         var x=d.x+Math.sin(t*0.35+d.seed*9)*3;
         var y=d.y+Math.cos(t*0.28+d.seed*7)*3;
-        var a=d.a*(0.45+0.55*Math.sin(t*1.1+d.seed*13));
-        ctx.globalAlpha=a; ctx.fillStyle=PAL.gold;
+        /* Constant faint specks. The old pulsing glow peaked just before the
+           snap started, which read as a single dot lighting up in the upper
+           right corner of the still portrait. */
+        ctx.globalAlpha=d.a*0.8; ctx.fillStyle=PAL.gold;
         ctx.fillRect(x,y,d.s,d.s);
-        if(d.seed>0.82){ ctx.globalAlpha=a*0.5; ctx.drawImage(glow,x-3,y-3,6,6); }
       }
       ctx.globalAlpha=1;
     }
@@ -5180,7 +5174,7 @@ var qrcode = function() {
       }
       releaseGPU();
       P=[]; dust=[]; motes=[]; qrDust=[]; rim=[]; pdata=null; FIELD=null; LOW=null;
-      img=grayImg=sample=QT=CF=glow=null;
+      img=grayImg=sample=QT=CF=null;
     }
     /* Debug/acceptance hook. Never called by the page itself. */
     window.__avatarFX={
