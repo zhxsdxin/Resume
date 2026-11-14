@@ -817,6 +817,8 @@
 
 
 
+
+
   /* ---------- Language switch ---------- */
   .hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
   .langlink{
@@ -4842,11 +4844,19 @@ var qrcode = function() {
          gathered QR has exactly the same module edges as the SVG. */
       var PER_MODULE=QR_SUB*QR_SUB, total=(QT.list.length||1)*PER_MODULE;
       for(var n=0;n<total;n++) P.push(makeParticle(n));
-      for(var k=0;k<28;k++)
-        dust.push({x:hash(k,1)*S,y:hash(k,2)*S,z:hash(k,3),s:hash(k,4)});
-      for(var m=0;m<16;m++)
-        motes.push({x:hash(m,41)*S,y:hash(m,43)*S,s:0.6+hash(m,47)*1.1,
+      /* Ambient dust floaters were removed: they were seeded across the whole
+         square and drifted upward, so stray specks appeared over the white
+         non-portrait areas (left / top-left corner). Non-portrait regions must
+         stay static, so the only motion now is the ash that sheds from the
+         silhouette and the QR that assembles inside the circle. */
+      for(var m=0;m<16;m++){
+        /* keep the faint shimmer on the portrait only, never on the white bg */
+        var mx,my,mt=0;
+        do{ mx=hash(m*1.7+mt*5.3,41)*S; my=hash(m*2.3+mt*7.9,43)*S; mt++; }
+        while(!insidePortrait(mx,my)&&mt<24);
+        motes.push({x:mx,y:my,s:0.6+hash(m,47)*1.1,
                     seed:hash(m,53),a:0.09+0.15*hash(m,59)});
+      }
       /* Frozen structure specks: only inside dark modules and never in a
          finder pattern or its separator. They cannot change the matrix. */
       if(QR_DATA && QR_DATA.cells && QT){
@@ -4949,44 +4959,19 @@ var qrcode = function() {
        underneath, so the 2D decoration clears early in the fixing pass. */
     function decorFade(qFade){ return 1-ss(0,0.30,qFade); }
     function atmosphere(u,t,dir,qFade){
-      /* The white stage is the .qr-circle background itself. Leaving this 2D
-         layer transparent while the code is being fixed lets the real vector
-         SVG underneath show through and close the sub-pixel gaps between ash
-         tiles. */
+      /* The white stage is the .qr-circle background itself. The 2D layer stays
+         transparent except for the final white wash that closes the gap before
+         the locked QR shows through, so the non-portrait area never animates or
+         receives any decorative tint. */
       ctx.save(); ctx.globalAlpha=decorFade(qFade);
-      var g=ctx.createRadialGradient(S*0.5,S*0.46,S*0.08,S*0.5,S*0.5,S*0.74);
-      g.addColorStop(0,'rgba(255,255,255,0)');
-      g.addColorStop(1,'rgba(126,124,118,0.09)');
-      ctx.fillStyle=g; ctx.fillRect(0,0,S,S);
-      var inten=Math.sin(u*Math.PI);
-      ctx.save();
-      for(var i=0;i<3;i++){
-        ctx.save(); ctx.translate(S*0.5,S*0.5);
-        ctx.rotate(t*0.10+i*2.1+(dir==='p2q'?0:0.9));
-        var lg=ctx.createLinearGradient(0,0,S*0.66,0);
-        lg.addColorStop(0,'rgba(150,126,96,'+(0.018*inten)+')');
-        lg.addColorStop(1,'rgba(150,126,96,0)');
-        ctx.fillStyle=lg;
-        ctx.beginPath(); ctx.moveTo(0,-1); ctx.lineTo(S*0.66,-S*0.055);
-        ctx.lineTo(S*0.66,S*0.055); ctx.lineTo(0,1); ctx.closePath(); ctx.fill();
-        ctx.restore();
-      }
-      for(var k=0;k<dust.length;k++){
-        var d=dust[k];
-        var dx=(d.x+Math.sin(t*0.3+d.s*9)*4+S)%S;
-        var dy=(d.y-t*3*(0.3+d.z)+S*10)%(S+8);
-        ctx.fillStyle='rgba(126,124,118,'+(0.06+d.z*0.12)+')';
-        ctx.fillRect(dx,dy,0.7+d.z*0.8,0.7+d.z*0.8);
-      }
-      ctx.restore();
-      ctx.restore();
       /* resolve into a clean white plate before the SVG takes over */
       var wash=decorFade(qFade)*
                (dir==='p2q'?ss(0.78,0.96,u):(1-ss(0.04,0.22,u)));
       if(wash>0.001){
-        ctx.save(); ctx.globalAlpha=wash; ctx.fillStyle='#ffffff';
-        ctx.fillRect(0,0,S,S); ctx.restore();
+        ctx.globalAlpha=wash; ctx.fillStyle='#ffffff';
+        ctx.fillRect(0,0,S,S);
       }
+      ctx.restore();
     }
     function plateLayer(u,dir,qFade){
       if(!QT) return;
