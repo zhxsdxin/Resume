@@ -819,6 +819,7 @@
 
 
 
+
   /* ---------- Language switch ---------- */
   .hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
   .langlink{
@@ -4404,6 +4405,7 @@ var qrcode = function() {
       'varying float v_mat;',
       'varying float v_fix;',
       'uniform float u_cell;',
+      'uniform float u_dpr;',
       'void main(){',
       '  vec2 pc=gl_PointCoord*2.0-1.0;',
       '  float alpha=v_var.x, rot=v_var.y, shape=v_var.z, snap=v_var.w;',
@@ -4439,11 +4441,11 @@ var qrcode = function() {
          fully opaque. Four grains coincide, so the gathered QR has exactly
          the same module edges as the SVG and no quadrant seams. */
       '  vec2 pxs=(gl_PointCoord-0.5)*px;',
-      /* Half a device px inside the true module edge. The vector SVG that
-         fades in underneath supplies the last half pixel, so the two layers
-         together are exactly the SVG matrix and neither can bleed into a
-         white module. */
-      '  float box=1.0-step(u_cell*0.5+0.5,max(abs(pxs.x),abs(pxs.y)));',
+      /* Match the cached canvas matrix exactly: half a module in device px
+         (u_cell = QT.cell*DPR) plus the same +0.06 cell padding paintQR uses,
+         so the GL ash at full fix is pixel-identical to the resting canvas QR
+         and the fade-out reveals the same picture, not a sparser one. */
+      '  float box=1.0-step(u_cell*0.5 + 0.03*u_dpr,max(abs(pxs.x),abs(pxs.y)));',
       /* grey ash and ink tiles coexist for most of the gather: the code
          darkens and sharpens continuously instead of snapping into view */
       '  float b=smoothstep(0.05,0.95,snap);',
