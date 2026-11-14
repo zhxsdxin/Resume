@@ -536,6 +536,10 @@
   .side-nav a{width:11px;height:11px;border-radius:50%;background:rgba(42,78,124,.28);border:1px solid rgba(42,78,124,.5);transition:.25s;text-decoration:none;}
   .side-nav a:hover{background:rgba(42,78,124,.6);}
   .side-nav a.active{background:#2a4e7c;transform:scale(1.4);box-shadow:0 0 0 4px rgba(42,78,124,.18);}
+  .side-nav a.nav-top{width:20px;height:20px;background:rgba(42,78,124,.5);border-color:rgba(42,78,124,.85);
+    display:flex;align-items:center;justify-content:center;}
+  .side-nav a.nav-top::before{content:'\2191';font-size:13px;line-height:1;color:#fff;font-weight:700;}
+  .side-nav a.nav-top:hover{background:rgba(42,78,124,.75);}
   /* qr lives in .qr-profile (hero); .qr is also reused by the modal */
   .qr{display:flex;justify-content:center;}
   .qr-cap{text-align:center;font-size:10px;color:#cdd6e0;margin-top:2px;letter-spacing:.02em;}
@@ -682,7 +686,9 @@
     .achieve ul,.awards{columns:1;}
     .edu-grid,.lang-grid,.cert-grid{grid-template-columns:1fr;}
     .edu.edu-wide{gap:10px;}
-    .side-nav{display:none!important;}
+    .side-nav{right:auto;left:50%;top:auto;bottom:10px;transform:translateX(-50%);
+      flex-direction:row;gap:9px;background:rgba(255,255,255,.82);
+      padding:7px 11px;border-radius:18px;box-shadow:0 3px 14px rgba(12,20,30,.18);}
     .sheet-footer{flex-wrap:wrap;gap:4px;font-size:7.6pt;overflow-wrap:anywhere;}
     .sec-title{font-size:9pt;letter-spacing:.1em;}
   }
@@ -714,6 +720,7 @@
     .hero h1{font-size:16pt;letter-spacing:0;}
     .qr-circle{width:84px;height:84px;}
   }
+
 
 
 
@@ -1277,6 +1284,7 @@
 </div>
 
   <nav class="side-nav" aria-label="Section navigation">
+    <a href="#top" class="nav-top" title="トップへ" aria-label="トップへ"></a>
     <a href="#s1" title="主な専門領域" aria-label="主な専門領域"></a>
     <a href="#s2" title="職務経歴" aria-label="職務経歴"></a>
     <a href="#s3" title="学歴" aria-label="学歴"></a>
@@ -3740,6 +3748,11 @@ var qrcode = function() {
   navLinks.forEach(function(a){
     a.addEventListener('click', function(ev){
       ev.preventDefault();
+      if (a.getAttribute('href') === '#top'){
+        window.scrollTo({top:0, behavior:'smooth'});
+        navLockUntil = Date.now() + 800;
+        return;
+      }
       var el = document.querySelector(a.getAttribute('href'));
       if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
       if (el) setActive(el.id);                       // 立即高亮被点的章节
