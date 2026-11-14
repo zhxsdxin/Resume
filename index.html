@@ -833,6 +833,8 @@
 
 
 
+
+
   /* ---------- Language switch ---------- */
   .hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
   .langlink{
@@ -3751,7 +3753,9 @@ var qrcode = function() {
       ev.preventDefault();
       if (a.getAttribute('href') === '#top'){
         window.scrollTo({top:0, behavior:'smooth'});
-        navLockUntil = Date.now() + 800;
+        navLinks.forEach(function(l){ l.classList.toggle('active', l === a); }); // 与章节圆点一致：点击后进入激活（放大）态
+        navLockUntil = Date.now() + 800;                 // 锁定，避免平滑滚动期间被滚动监听清掉
+        setTimeout(navOnScroll, 820);                   // 锁定结束后重算，使到达顶端后回落为「无圆点高亮」
         return;
       }
       var el = document.querySelector(a.getAttribute('href'));
