@@ -781,6 +781,10 @@
 
 
 
+
+
+
+
   /* ---------- Language switch ---------- */
   .hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
   .langlink{
@@ -3826,14 +3830,11 @@ var qrcode = function() {
     });
   })();
 
-  /* ---- cinematic avatar VFX -----------------------------------------------
-     Portrait -> silhouette-first ash disintegration -> energy vortex ->
-     fragments snapping onto the QR modules -> crisp matrix.
-     One canvas inside .avatar-clip paints every effect, so the surrounding
-     page never moves. rAF runs only during the two 3s transitions; the two
-     10s holds are pure layer opacity, so idle cost is zero.
-     The final code is drawn from QR_DATA.cells (the real source matrix) and the
-     canvas is fully cleared before the QR hold begins. */
+  /* ---- Cinematic Thanos-snap avatar -> particle QR ------------------------
+     Fixed resources, one deterministic particle set, one time axis.
+     Layer 1 = the untouched DOM SVG (the real, scannable contact QR).
+     Layer 2 = this canvas (decorative ash only; never edits a QR module).
+     No external library: this page is a single offline HTML file. */
   (function(){
     var circle = document.querySelector('.qr-circle');
     var photo  = document.querySelector('.avatar-photo');
@@ -3843,14 +3844,50 @@ var qrcode = function() {
     if(!circle || !photo || !qrl || !cv) return;
     var ctx = cv.getContext('2d');
     if(!ctx) return;
-
     var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    /* half speed: 10s portrait / 3s transition / 10s QR / 3s transition */
-    var CYCLE = 26000, A = 10000, B = 13000, C = 23000;
-    var t0 = performance.now();
-    var S = 0, DPR = 1, img = null, sample = null, QT = null;
-    var P = [], CELLS = [], dust = [], glow = null, raf = 0, timer = 0;
-    var CG = 32;                       /* grid used to clip the intact portrait */
+
+    /* ---- component config: fixed assets, timeline, particle budget ------ */
+    var ASSETS = {
+      /* Fixed portrait: inline JPEG exposed by --garf (square crop of
+         xin.jpg). Filled once below; never uploaded or swapped at runtime. */
+      AVATAR_IMAGE: null,
+      /* Fixed contact QR: the frozen source matrix of the contact card.
+         EN and JA localise TITLE, so the matrix is evaluated exactly once per
+         page load and cached - the loop never generates or alters a module. */
+      CONTACT_QR_IMAGE: null
+    };
+    var PHASES = [
+      {key:'avatar',   ms:3000},   /* A: normal avatar + faint gold dust       */
+      {key:'snap',     ms:2000},   /* B/C: noise-front snap + floating ash     */
+      {key:'assemble', ms:1000},   /* D: ash settles onto the QR modules       */
+      {key:'qr',       ms:3000},   /* E: original QR + decorative ash layer    */
+      {key:'dissolve', ms:2000},   /* F: QR breaks back into an ash cloud      */
+      {key:'restore',  ms:1000}    /* F: ash returns to the avatar pixels      */
+    ];
+    var BOUNDS = [], TOTAL = 0;
+    for(var pi=0; pi<PHASES.length; pi++){ BOUNDS.push(TOTAL); TOTAL += PHASES[pi].ms; }
+    var PAL = {
+      ash:'#b9a689', gold:'#e8b56a', ember:'#f2bb6c', silver:'#dfe4ea',
+      blue:'#9db6d4', ink:'#0d1620'
+    };
+    var CG = 32;                    /* grid clipping the intact / greying face */
+
+    var S = 0, DPR = 1, G = 48;
+    var img = null, grayImg = null, sample = null, QT = null, CF = null, glow = null;
+    var P = [], CELLS = [], dust = [], motes = [], qrDust = [], rim = [];
+    var t0 = performance.now(), skipped = 0, holdStart = 0, offset = 0;
+    var lastHold = 0, lastMode = '', raf = 0;
+    var paused = false, printing = false, destroyed = false;
+    /* Monotonic clock with explicit compensation for hidden / paused spans.
+       performance.now() keeps the phase exact even when rAF is throttled;
+       freeze()/thaw() remove the hidden span from the timeline entirely. */
+    function nowClock(){
+      return (holdStart ? holdStart : performance.now()) - skipped - t0 + offset;
+    }
+    function freeze(){ if(!holdStart) holdStart=performance.now(); }
+    function thaw(){ if(holdStart){ skipped+=performance.now()-holdStart; holdStart=0; } }
+    function currentElapsed(){ var v=nowClock()%TOTAL; return v<0?v+TOTAL:v; }
+
 
     function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
     function ss(a,b,v){ var t=clamp((v-a)/(b-a),0,1); return t*t*(3-2*t); }
@@ -3861,7 +3898,18 @@ var qrcode = function() {
       return { x:(psi(x,y+e,t)-psi(x,y-e,t))/(2*e),
                y:-(psi(x+e,y,t)-psi(x-e,y,t))/(2*e) };
     }
-
+    /* value-noise / fbm: the irregular, slowly evolving dissolution boundary */
+    function vnoise(x,y){
+      var ix=Math.floor(x), iy=Math.floor(y), fx=x-ix, fy=y-iy;
+      fx=fx*fx*(3-2*fx); fy=fy*fy*(3-2*fy);
+      var a=hash(ix,iy), b=hash(ix+1,iy), c=hash(ix,iy+1), d=hash(ix+1,iy+1);
+      return a+(b-a)*fx+(c-a)*fy+(a-b-c+d)*fx*fy;
+    }
+    function fbm(x,y){
+      return 0.58*vnoise(x,y)
+           + 0.28*vnoise(x*2.1+3.7,y*2.1-1.3)
+           + 0.14*vnoise(x*4.3-2.2,y*4.3+5.1);
+    }
     function makeGlow(){
       var g=document.createElement('canvas'); g.width=g.height=32;
       var c=g.getContext('2d');
@@ -3872,11 +3920,15 @@ var qrcode = function() {
       c.fillStyle=rg; c.fillRect(0,0,32,32);
       return g;
     }
+    function gridSize(){
+      var small=Math.min(window.innerWidth,window.innerHeight)<600;
+      var mem=navigator.deviceMemory||4, cores=navigator.hardwareConcurrency||4;
+      if(small) return 36;
+      if(mem<=2 || cores<=2) return 40;
+      return 52;
+    }
     function targets(){
-      var out=[], N = QR_DATA ? QR_DATA.N : 1;
-      /* the canvas rebuild uses the same --qr-size as the final SVG, so the
-         matrix settles onto exactly the same module grid */
-      var frac=0.76;
+      var out=[], N=QR_DATA?QR_DATA.N:1, frac=0.76;
       try{
         var raw=getComputedStyle(circle).getPropertyValue('--qr-size');
         if(raw && raw.indexOf('%')>=0 && parseFloat(raw)>0) frac=parseFloat(raw)/100;
@@ -3885,17 +3937,15 @@ var qrcode = function() {
       if(QR_DATA && QR_DATA.cells){
         for(var i=0;i<QR_DATA.cells.length;i++){
           var rc=QR_DATA.cells[i];
-          out.push({ x:off+(rc[1]+QR_DATA.pad+0.5)*cell,
-                     y:off+(rc[0]+QR_DATA.pad+0.5)*cell });
+          out.push({x:off+(rc[1]+QR_DATA.pad+0.5)*cell,
+                    y:off+(rc[0]+QR_DATA.pad+0.5)*cell});
         }
       }
       return {list:out,box:box,off:off,cell:cell};
     }
-    /* Read the subject outline out of the portrait itself. The backdrop is a
-       bright wall and the subject is darker, so a luminance split plus a
-       majority filter and border-connected hole filling yields the head-and-
-       shoulders silhouette. A two-pass chamfer transform then gives each pixel
-       its distance to that outline. No external vision dependency. */
+    /* Head-and-shoulders silhouette from the portrait itself: luminance split,
+       3x3 majority filter, border-connected hole filling, two-pass chamfer
+       distance to the outline. No external vision dependency. */
     function contourField(){
       if(!sample) return null;
       var W=sample.width, H=sample.height, d=sample.data;
@@ -3913,10 +3963,8 @@ var qrcode = function() {
           fg[yy*W+xx]=s>=5?1:0;
         }
       }
-      /* flood the exterior through the image border; anything still unmarked
-         is a hole inside the silhouette (eyes, collar) and gets closed */
       var ext=new Uint8Array(W*H), stack=[], sp=0;
-      function seed(x,y){ var id=y*W+x; if(!fg[id] && !ext[id]){ ext[id]=1; stack.push(id); } }
+      function seed(x,y){ var id=y*W+x; if(!fg[id]&&!ext[id]){ ext[id]=1; stack.push(id); } }
       for(var x0=0;x0<W;x0++){ seed(x0,0); seed(x0,H-1); }
       for(var y0=0;y0<H;y0++){ seed(0,y0); seed(W-1,y0); }
       while(sp<stack.length){
@@ -3926,13 +3974,13 @@ var qrcode = function() {
         if(ry>0){   nb=id-W; if(!fg[nb]&&!ext[nb]){ext[nb]=1;stack.push(nb);} }
         if(ry<H-1){ nb=id+W; if(!fg[nb]&&!ext[nb]){ext[nb]=1;stack.push(nb);} }
       }
-      for(var q=0;q<W*H;q++) if(!fg[q] && !ext[q]) fg[q]=1;
+      for(var q=0;q<W*H;q++) if(!fg[q]&&!ext[q]) fg[q]=1;
       var dist=new Float32Array(W*H), INF=1e4;
-      for(var q=0;q<W*H;q++) dist[q]=INF;
+      for(var q2=0;q2<W*H;q2++) dist[q2]=INF;
       for(var y2=1;y2<H-1;y2++) for(var x2=1;x2<W-1;x2++){
-        var id=y2*W+x2, f=fg[id];
-        if((f && (!fg[id-1]||!fg[id+1]||!fg[id-W]||!fg[id+W])) ||
-           (!f && (fg[id-1]||fg[id+1]||fg[id-W]||fg[id+W]))) dist[id]=0;
+        var id2=y2*W+x2, f=fg[id2];
+        if((f&&(!fg[id2-1]||!fg[id2+1]||!fg[id2-W]||!fg[id2+W])) ||
+           (!f&&(fg[id2-1]||fg[id2+1]||fg[id2-W]||fg[id2+W]))) dist[id2]=0;
       }
       for(var y3=1;y3<H-1;y3++) for(var x3=1;x3<W-1;x3++){
         var a=y3*W+x3;
@@ -3944,76 +3992,142 @@ var qrcode = function() {
       }
       return {W:W,H:H,fg:fg,dist:dist};
     }
-    /* The outline is released first, the core of the silhouette last; the
-       backdrop follows just behind. Jitter is keyed to normalised coordinates
-       so the clip grid and the particle grid agree on the same ragged edge. */
-    function releaseAt(CF,i,j,G){
+    /* Greying front starts at the bottom-right corner and advances along an
+       irregular fbm boundary. Fragment release is biased towards the subject
+       outline, so the head and shoulders peel away first. */
+    function snapGate(nx,ny){
+      var corner=((1-nx)+(1-ny))*0.5;
+      var n=(fbm(nx*3.4+11,ny*3.4+7)-0.5)*0.30;
+      return clamp(0.02+corner*0.50+n,0.01,0.62);
+    }
+    function contourGate(i,j,grid){
       var ed=0.55, inside=false;
       if(CF){
-        var cx=clamp(Math.floor(i/G*CF.W),0,CF.W-1);
-        var cy=clamp(Math.floor(j/G*CF.H),0,CF.H-1);
-        var ci=cy*CF.W+cx;
-        inside=!!CF.fg[ci];
-        ed=clamp(CF.dist[ci]/20,0,1);
+        var cx=clamp(Math.floor((i+0.5)/grid*CF.W),0,CF.W-1);
+        var cy=clamp(Math.floor((j+0.5)/grid*CF.H),0,CF.H-1);
+        var ci=cy*CF.W+cx; inside=!!CF.fg[ci]; ed=clamp(CF.dist[ci]/20,0,1);
       }
-      var r = inside ? (0.03+0.40*ed) : (0.10+0.30*ed);
-      r += (hash(Math.floor(i/G*64)+53,Math.floor(j/G*64)+7)-0.5)*0.08;
+      var r=inside?(0.03+0.40*ed):(0.10+0.30*ed);
+      r+=(hash(Math.floor((i+0.5)/grid*64)+53,Math.floor((j+0.5)/grid*64)+7)-0.5)*0.08;
       return clamp(r,0.01,0.52);
     }
+    function cellGate(i,j,grid){
+      var nx=(i+0.5)/grid, ny=(j+0.5)/grid;
+      var g=snapGate(nx,ny), c=contourGate(i,j,grid);
+      return {grey:g, gone:clamp(Math.min(g,c)+0.10,0.02,0.64),
+              rel:clamp(0.45*g+0.55*c,0.01,0.60), ph:(ny*10+nx*7)};
+    }
     function build(){
-      glow=makeGlow(); QT=targets();
-      var CF=contourField();
-      P=[]; CELLS=[];
-      var G=48;                                      // 2304 fragments
+      glow=makeGlow(); QT=targets(); CF=contourField(); G=gridSize();
+      P=[]; CELLS=[]; dust=[]; motes=[]; qrDust=[]; rim=[];
       for(var j=0;j<G;j++) for(var i=0;i<G;i++){
-        var hx=(i+0.5)/G*S, hy=(j+0.5)/G*S, col='#8496a8';
+        var hx=(i+0.5)/G*S, hy=(j+0.5)/G*S, col=PAL.ash;
         if(sample){
           var sx=clamp(Math.floor(i/G*sample.width),0,sample.width-1);
           var sy=clamp(Math.floor(j/G*sample.height),0,sample.height-1);
           var d=sample.data, k=(sy*sample.width+sx)*4;
           col='rgb('+d[k]+','+d[k+1]+','+d[k+2]+')';
         }
-        var t = QT.list.length ? QT.list[(i*G+j)%QT.list.length] : {x:S/2,y:S/2};
+        var t=QT.list.length?QT.list[(i*G+j)%QT.list.length]:{x:S/2,y:S/2};
+        var ang=hash(i+61,j+13)*6.283;
+        var rad=S*(0.10+0.34*Math.sqrt(hash(i+71,j+17)));
+        var seed=hash(i+19,j+23);
+        var cg=cellGate(i,j,G);
         P.push({
-          hx:hx, hy:hy, tx:t.x+(hash(j,i)-0.5)*0.6, ty:t.y+(hash(i+7,j)-0.5)*0.6,
-          z:hash(i+3,j+5), size:0.6+hash(i+11,j)*2.0,
-          seed:hash(i+19,j+23), shape:hash(i,j+31),
-          c0:col,
-          c1:hash(i,j)>0.62 ? '#e8b56a' : (hash(i,j+41)>0.68?'#9db6d4':'#b9a689'),
-          rel0:releaseAt(CF,i,j,G), ph:(j/G)*10+(i/G)*7,
-          x:hx, y:hy, vx:0, vy:0
+          avatarPosition:{x:hx,y:hy},
+          qrPosition:{x:t.x+(hash(j,i)-0.5)*0.6,y:t.y+(hash(i+7,j)-0.5)*0.6},
+          scatterPosition:{x:S/2+Math.cos(ang)*rad,y:S/2+Math.sin(ang)*rad},
+          velocity:{x:0,y:0},
+          randomSeed:seed,
+          particleSize:0.6+hash(i+11,j)*2.0,
+          particleColor:{photo:col,
+            ash:hash(i,j)>0.62?PAL.gold:(hash(i,j+41)>0.68?PAL.blue:PAL.ash)},
+          depth:hash(i+3,j+5), shape:hash(i,j+31),
+          release:cg.rel, phase:cg.ph,
+          x:hx, y:hy
         });
       }
-      for(var cj=0;cj<CG;cj++) for(var ci=0;ci<CG;ci++)
-        CELLS.push({r:releaseAt(CF,ci,cj,CG), ph:(cj/CG)*10+(ci/CG)*7});
-      dust=[];
-      for(var k=0;k<28;k++) dust.push({x:hash(k,1)*S,y:hash(k,2)*S,z:hash(k,3),s:hash(k,4)});
+      for(var cj=0;cj<CG;cj++) for(var ci=0;ci<CG;ci++){
+        var c=cellGate(ci,cj,CG);
+        CELLS.push({grey:c.grey,gone:c.gone,ph:c.ph});
+      }
+      for(var k=0;k<28;k++)
+        dust.push({x:hash(k,1)*S,y:hash(k,2)*S,z:hash(k,3),s:hash(k,4)});
+      for(var m=0;m<16;m++)
+        motes.push({x:hash(m,41)*S,y:hash(m,43)*S,s:0.6+hash(m,47)*1.1,
+                    seed:hash(m,53),a:0.09+0.15*hash(m,59)});
+      /* Frozen structure specks: only inside dark modules and never in a
+         finder pattern or its separator. They cannot change the matrix. */
+      if(QR_DATA && QR_DATA.cells && QT){
+        var n=QR_DATA.n;
+        for(var z=0;z<QR_DATA.cells.length && qrDust.length<170;z++){
+          var rc=QR_DATA.cells[z], r=rc[0], c2=rc[1];
+          if((r<9&&c2<9)||(r<9&&c2>=n-9)||(r>=n-9&&c2<9)) continue;
+          if(hash(r+3,c2+7)>0.18) continue;
+          qrDust.push({
+            x:QT.off+(c2+QR_DATA.pad+0.30+0.40*hash(r+11,c2+5))*QT.cell,
+            y:QT.off+(r+QR_DATA.pad+0.30+0.40*hash(r+19,c2+13))*QT.cell,
+            s:Math.max(0.35,QT.cell*0.22*hash(r+23,c2+17)),
+            a:0.08+0.14*hash(r+29,c2+31)
+          });
+        }
+      }
+      for(var v=0;v<22;v++)
+        rim.push({ang:hash(v,71)*6.283,rad:S*(0.435+0.055*hash(v,73)),
+                  s:0.5+hash(v,79)*0.9,seed:hash(v,83),a:0.05+0.10*hash(v,89)});
     }
     function resize(){
       var r=circle.getBoundingClientRect(), n=Math.round(Math.min(r.width,r.height));
       if(!n || n===S) return;
-      S=n; DPR=Math.min(2, window.devicePixelRatio||1);
+      S=n; DPR=Math.min(2,window.devicePixelRatio||1);
       cv.width=Math.round(S*DPR); cv.height=Math.round(S*DPR);
       ctx.setTransform(DPR,0,0,DPR,0,0);
       build();
     }
+    function buildSamples(){
+      var sc=document.createElement('canvas'); sc.width=sc.height=64;
+      var c2=sc.getContext('2d'); c2.drawImage(img,0,0,64,64);
+      try{ sample=c2.getImageData(0,0,64,64); }catch(e){ sample=null; }
+      var gw=img.naturalWidth||256, gh=img.naturalHeight||256;
+      var gc=document.createElement('canvas'); gc.width=gw; gc.height=gh;
+      var g2=gc.getContext('2d'); g2.drawImage(img,0,0);
+      try{
+        var id=g2.getImageData(0,0,gw,gh), d=id.data;
+        for(var i=0;i<d.length;i+=4){
+          var L=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+          d[i]=L*0.92+22; d[i+1]=L*0.90+20; d[i+2]=L*0.86+18;
+        }
+        g2.putImageData(id,0,0); grayImg=gc;
+      }catch(e){ grayImg=img; }
+      if(S) build();
+    }
+    /* Resolve the two fixed resources once, then never touch them again. */
     var gv=getComputedStyle(document.querySelector('.qr-profile')||circle).getPropertyValue('--garf');
     var mm=/url\((['"]?)([^'"]+)\1\)/.exec(gv||'');
     if(mm){
+      ASSETS.AVATAR_IMAGE=mm[2];
       img=new Image();
-      img.onload=function(){
-        var sc=document.createElement('canvas'); sc.width=sc.height=64;
-        var c2=sc.getContext('2d'); c2.drawImage(img,0,0,64,64);
-        try{ sample=c2.getImageData(0,0,64,64); }catch(e){ sample=null; }
-        if(S) build();
-      };
+      img.onload=buildSamples;
       img.src=mm[2];
     }
+    if(QR_DATA){
+      ASSETS.CONTACT_QR_IMAGE={
+        modules:QR_DATA.n, quietZone:QR_DATA.pad,
+        cells:QR_DATA.cells, svg:QR_DATA.svg
+      };
+    }
 
-    /* A slow time wobble keeps the silhouette boundary alive. The same phase
-       key drives both the clip grid and the fragments, so they always agree on
-       which pixels are still intact. */
-    function gate(r,ph,t){ return r + Math.sin(t*1.9+ph)*0.022; }
+    /* ---- layers ---------------------------------------------------------- */
+    function setLayers(mode){
+      if(mode===lastMode) return;
+      lastMode=mode;
+      var a=(mode==='avatar'), q=(mode==='qr');
+      photo.style.opacity=a?'1':'0';
+      qrl.style.opacity=q?'1':'0';
+      if(badge) badge.style.opacity=a?'1':'0';
+      cv.style.opacity=(mode==='plain')?'0':'1';
+    }
+    function gate(r,ph,t){ return r+Math.sin(t*1.9+ph)*0.022; }
     function atmosphere(u,t,dir){
       var g=ctx.createRadialGradient(S*0.5,S*0.45,S*0.05,S*0.5,S*0.5,S*0.72);
       g.addColorStop(0,'rgba(24,34,46,0.92)'); g.addColorStop(1,'rgba(8,13,20,0.98)');
@@ -4042,10 +4156,9 @@ var qrcode = function() {
       var vg=ctx.createRadialGradient(S/2,S/2,S*0.30,S/2,S/2,S*0.62);
       vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.45)');
       ctx.fillStyle=vg; ctx.fillRect(0,0,S,S);
-      /* The atmosphere resolves into a clean white plate after the particles
-         are gone, so handing over to the DOM SVG has no visible pop. The
-         reverse transition starts from that same white plate. */
-      var wash = dir==='p2q' ? ss(0.76,0.94,u) : (1-ss(0,0.20,u));
+      /* the atmosphere resolves into a clean white plate before the SVG takes
+         over; the reverse transition starts from that same white plate */
+      var wash=dir==='p2q'?ss(0.78,0.96,u):(1-ss(0.12,0.34,u));
       if(wash>0.001){
         ctx.save(); ctx.globalAlpha=wash; ctx.fillStyle='#ffffff';
         ctx.fillRect(0,0,S,S); ctx.restore();
@@ -4054,193 +4167,304 @@ var qrcode = function() {
     function portraitLayer(u,t,dir){
       if(!img) return;
       if(dir==='q2p'){
-        var al=ss(0.76,1,u);
-        if(al<=0.001) return;
-        ctx.save(); ctx.globalAlpha=al; ctx.drawImage(img,0,0,S,S); ctx.restore();
+        var gr=ss(0.72,0.94,u), col=ss(0.84,1,u);
+        ctx.save();
+        ctx.globalAlpha=gr; ctx.drawImage(grayImg||img,0,0,S,S);
+        ctx.globalAlpha=col; ctx.drawImage(img,0,0,S,S);
+        ctx.restore();
         return;
       }
-      /* keep only the cells the silhouette erosion has not reached yet */
-      var cw=S/CG, any=false;
-      ctx.save(); ctx.beginPath();
+      /* three zones: intact colour / greying band / already disintegrated */
+      var cw=S/CG, anyA=false, anyB=false;
+      ctx.save();
+      ctx.beginPath();
       for(var j=0;j<CG;j++) for(var i=0;i<CG;i++){
         var c=CELLS[j*CG+i];
-        if(u < gate(c.r,c.ph,t)){ ctx.rect(i*cw,j*cw,cw+0.6,cw+0.6); any=true; }
+        if(u<gate(c.grey,c.ph,t)){ ctx.rect(i*cw,j*cw,cw+0.6,cw+0.6); anyA=true; }
       }
-      if(!any){ ctx.restore(); return; }
-      ctx.clip();
-      ctx.drawImage(img,0,0,S,S);   /* source is square -> equivalent to cover */
+      if(anyA){ ctx.clip(); ctx.drawImage(img,0,0,S,S); }
+      ctx.restore();
+      ctx.save(); ctx.beginPath();
+      for(var j2=0;j2<CG;j2++) for(var i2=0;i2<CG;i2++){
+        var c2=CELLS[j2*CG+i2], g2=gate(c2.grey,c2.ph,t);
+        if(u>=g2 && u<gate(c2.gone,c2.ph,t)){
+          ctx.rect(i2*cw,j2*cw,cw+0.6,cw+0.6); anyB=true;
+        }
+      }
+      if(anyB){
+        ctx.clip(); ctx.drawImage(grayImg||img,0,0,S,S);
+        ctx.globalCompositeOperation='lighter';
+        ctx.globalAlpha=0.22*Math.sin(u*Math.PI*1.4);
+        ctx.fillStyle=PAL.ember; ctx.fillRect(0,0,S,S);
+      }
       ctx.restore();
     }
-    /* The vortex condenses into a white digital plate. Fragments then land on
-       it as dark modules, so the code is visibly assembled out of the ash
-       before the crisp matrix takes over. */
     function plateLayer(u,dir){
       if(!QT) return;
-      var a = dir==='p2q' ? ss(0.54,0.72,u) : (1-ss(0.14,0.34,u));
+      var a=dir==='p2q'?ss(0.56,0.74,u):(1-ss(0.16,0.36,u));
       if(a<=0.001) return;
       ctx.save(); ctx.globalAlpha=a; ctx.fillStyle='#ffffff';
       ctx.fillRect(QT.off,QT.off,QT.box,QT.box); ctx.restore();
     }
-    /* crisp matrix from the real source; identical geometry to the DOM SVG */
+    /* crisp matrix drawn from the frozen source; same geometry as the SVG */
     function matrixLayer(u,dir){
-      if(!QR_DATA || !QR_DATA.cells || !QT) return;
-      var a = dir==='p2q' ? ss(0.70,0.90,u) : (1-ss(0.02,0.18,u));
+      if(!QR_DATA||!QR_DATA.cells||!QT) return;
+      var a=dir==='p2q'?ss(0.72,0.92,u):(1-ss(0.02,0.20,u));
       if(a<=0.001) return;
-      ctx.save(); ctx.globalAlpha=a; ctx.fillStyle='#0d1620';
+      ctx.save(); ctx.globalAlpha=a; ctx.fillStyle=PAL.ink;
       for(var i=0;i<QR_DATA.cells.length;i++){
         var rc=QR_DATA.cells[i];
         ctx.fillRect(QT.off+(rc[1]+QR_DATA.pad)*QT.cell,
                      QT.off+(rc[0]+QR_DATA.pad)*QT.cell,
-                     QT.cell+0.35, QT.cell+0.35);
+                     QT.cell+0.35,QT.cell+0.35);
       }
       ctx.restore();
     }
-    /* Bounded parametric trajectories + curl turbulence. Every fragment stays
-       inside the avatar at all times; motion comes from the evolving noise
-       field, depth-weighted drift and a compressing vortex, not from an
-       unbounded velocity integral. */
+    /* One particle set morphs in both directions. Weighted blend of four
+       deterministic attractors, curl turbulence, compressing vortex and
+       bounded drift; every coordinate stays inside the avatar circle. */
     function particleLayer(u,t,dir){
       var cx=S*0.5, cy=S*0.5, toQR=(dir==='p2q');
-      var wDis,wVor,wAtt;
+      var wDis,wSca,wVor,wAtt,wHome,life,snap;
       if(toQR){
-        wDis=1-ss(0.22,0.50,u);
-        wVor=ss(0.28,0.46,u)*(1-ss(0.60,0.80,u));
-        wAtt=ss(0.50,0.78,u);
+        wDis=1-ss(0.18,0.50,u);
+        wSca=ss(0.14,0.40,u)*(1-ss(0.58,0.80,u));
+        wVor=ss(0.34,0.56,u)*(1-ss(0.70,0.88,u));
+        wAtt=ss(0.62,0.90,u); wHome=0;
+        life=1-ss(0.90,0.99,u); snap=ss(0.60,0.90,u);
       }else{
-        wAtt=1-ss(0.06,0.26,u);
-        wVor=ss(0.20,0.42,u)*(1-ss(0.62,0.84,u));
-        wDis=ss(0.60,0.88,u);
+        wAtt=1-ss(0.05,0.28,u);
+        wVor=ss(0.18,0.42,u)*(1-ss(0.64,0.86,u));
+        wSca=ss(0.30,0.56,u)*(1-ss(0.70,0.92,u));
+        wHome=ss(0.70,0.98,u); wDis=0;
+        life=1-ss(0.88,0.99,u); snap=1-ss(0.06,0.32,u);
       }
       var windX=0.55+0.25*Math.sin(t*0.6), windY=-0.65-0.2*Math.cos(t*0.9);
-      var life=1-ss(toQR?0.88:0.74,0.98,u);   /* gone before the QR hold */
-      var snap=toQR ? ss(0.50,0.76,u) : (1-ss(0.12,0.36,u));  /* ash -> QR ink */
       ctx.save();
       for(var i=0;i<P.length;i++){
-        var p=P[i];
-        /* release follows the silhouette outline, not a straight screen edge */
-        var g=gate(p.rel0,p.ph,t);
-        var rel = toQR ? ss(g-0.05,g+0.07,u) : 1;
+        var p=P[i], ap=p.avatarPosition, qp=p.qrPosition, sp=p.scatterPosition;
+        var g=gate(p.release,p.phase,t);
+        var rel=toQR?ss(g-0.05,g+0.07,u):1;
         if(rel<=0.001) continue;
-        var fresh = toQR ? 1-clamp(Math.abs(u-g)/0.11,0,1) : 0;
-        var tx=toQR?p.tx:p.hx, ty=toQR?p.ty:p.hy;
-        var c=curl(p.hx/S*3.0,p.hy/S*3.0,t+p.seed*0.4);
-        /* A: dissolve - bounded drift along two wind fields + curl */
-        var amp=S*0.20*(0.4+p.z*0.9)*rel*ss(0,0.55,u);
-        var ax=p.hx+(windX+c.x*0.62)*amp + Math.sin(t*1.7+p.seed*9)*S*0.012;
-        var ay=p.hy+(windY+c.y*0.62)*amp + Math.cos(t*1.3+p.seed*7)*S*0.012;
-        /* B: compressing vortex around the centre */
-        var ang=p.seed*6.283+(toQR?1:-1)*(2.2+u*5.0)*(0.6+p.z*0.8);
-        var rad=S*(0.38-0.20*ss(0.28,0.74,u))*(0.55+p.z*0.6);
+        var fresh=toQR?1-clamp(Math.abs(u-g)/0.11,0,1):0;
+        var c=curl(ap.x/S*3.0,ap.y/S*3.0,t+p.randomSeed*0.4);
+        var amp=S*0.20*(0.4+p.depth*0.9)*rel*ss(0,0.55,u);
+        var ax=ap.x+(windX+c.x*0.62)*amp+Math.sin(t*1.7+p.randomSeed*9)*S*0.012;
+        var ay=ap.y+(windY+c.y*0.62)*amp+Math.cos(t*1.3+p.randomSeed*7)*S*0.012;
+        var sc=curl(sp.x/S*3.4,sp.y/S*3.4,t*1.15+p.randomSeed);
+        var sx=sp.x+sc.x*S*0.055+Math.sin(t*0.8+p.randomSeed*11)*S*0.02;
+        var sy=sp.y+sc.y*S*0.055+Math.cos(t*0.7+p.randomSeed*8)*S*0.02;
+        var ang=p.randomSeed*6.283+(toQR?1:-1)*(2.2+u*5.0)*(0.6+p.depth*0.8);
+        var rad=S*(0.38-0.20*ss(0.28,0.74,u))*(0.55+p.depth*0.6);
         var bx=cx+Math.cos(ang)*rad, by=cy+Math.sin(ang)*rad;
-        /* blend + a final evolving turbulence nudge */
-        var sum=wDis+wVor+wAtt || 1;
-        var x=(ax*wDis+bx*wVor+tx*wAtt)/sum;
-        var y=(ay*wDis+by*wVor+ty*wAtt)/sum;
-        var q=curl(x/S*2.5,y/S*2.5,t*1.3+p.seed);
-        var nudge=S*0.018*(1-wAtt)*rel;
+        var sum=wDis+wSca+wVor+wAtt+wHome||1;
+        var x=(ax*wDis+sx*wSca+bx*wVor+qp.x*wAtt+ap.x*wHome)/sum;
+        var y=(ay*wDis+sy*wSca+by*wVor+qp.y*wAtt+ap.y*wHome)/sum;
+        var q=curl(x/S*2.5,y/S*2.5,t*1.3+p.randomSeed);
+        var nudge=S*0.018*(1-Math.max(wAtt,wHome))*rel;
         x+=q.x*nudge; y+=q.y*nudge;
+        p.velocity.x=x-p.x; p.velocity.y=y-p.y;
         p.x=x; p.y=y;
-        var born=toQR ? ss(0,0.06+p.seed*0.10,u) : 1;
-        /* staggered lifetimes: most fragments survive long enough to land on
-           their QR module, then wink out in waves as the matrix solidifies */
-        var expiry=0.86+p.seed*0.12;
-        var span=1-ss(expiry-0.10,expiry,u);
-        /* fragments released long ago are dimmer (older ash) */
+        var born=toQR?ss(0,0.06+p.randomSeed*0.10,u):1;
+        var expiry=toQR?(0.86+p.randomSeed*0.12):(0.84+p.randomSeed*0.14);
+        var span=1-ss(expiry-0.12,expiry,u);
         var aged=toQR?clamp((u-g)/0.34,0,1):0;
-        var a=(0.22+p.z*0.78)*rel*born*life*span*(1-0.55*aged)*(1+0.7*fresh);
+        var a=(0.22+p.depth*0.78)*rel*born*life*span*(1-0.55*aged)*(1+0.7*fresh);
         if(a<=0.01) continue;
-        var warm = toQR ? ss(0.06,0.56,u) : (1-ss(0.30,0.80,u));
-        var sz=p.size*(0.45+p.z*0.9)*(1+0.45*wVor);
-        var frag=wAtt>0.45 || (dir==='q2p'&&u<0.22);
+        var warm=toQR?ss(0.06,0.56,u):(1-ss(0.42,0.86,u));
+        var sz=p.particleSize*(0.45+p.depth*0.9)*(1+0.45*wVor);
+        var frag=wAtt>0.45||wHome>0.55||(dir==='q2p'&&u<0.22);
         var w=frag?sz:sz*(0.5+p.shape);
         var h=frag?sz:sz*(1.4-p.shape*0.5);
-        /* controlled motion-blur streak */
-        var streak=sz*(1.2+p.z)*(1-wAtt);
-        if(streak>0.6){
+        /* motion-blur streak follows the actual per-frame velocity */
+        var vx=p.velocity.x, vy=p.velocity.y, vl=Math.sqrt(vx*vx+vy*vy);
+        var streak=clamp(vl*3.0,0,sz*3.2)*(1-Math.max(wAtt,wHome));
+        if(streak>0.6 && vl>0.01){
           ctx.globalAlpha=a*0.30;
-          ctx.strokeStyle=warm>0.5?p.c1:p.c0;
+          ctx.strokeStyle=warm>0.5?p.particleColor.ash:p.particleColor.photo;
           ctx.lineWidth=Math.max(0.4,sz*0.42);
           ctx.beginPath();
-          ctx.moveTo(x-(windX+c.x*0.5)*streak,y-(windY+c.y*0.5)*streak);
-          ctx.lineTo(x,y); ctx.stroke();
+          ctx.moveTo(x-vx/vl*streak,y-vy/vl*streak); ctx.lineTo(x,y); ctx.stroke();
         }
         ctx.globalAlpha=a*(1-snap*0.90);
-        ctx.fillStyle = fresh>0.35 ? '#f2bb6c' : (warm>0.5?p.c1:p.c0);
+        ctx.fillStyle=fresh>0.35?PAL.ember:(warm>0.5?p.particleColor.ash:p.particleColor.photo);
         ctx.fillRect(x-w*0.5,y-h*0.5,w,h);
-        /* the fragment settles onto its own QR module as a dark square, so the
-           code is visibly assembled out of the ash before it turns crisp */
+        /* the fragment lands on its own real module as a dark square, so the
+           QR is visibly assembled out of the ash before the matrix solidifies */
         if(snap>0.02 && QT && QT.list.length){
-          var ix=x+(p.tx-x)*snap, iy=y+(p.ty-y)*snap, mw=QT.cell*1.08;
-          ctx.globalAlpha=Math.min(1,a*snap*1.7); ctx.fillStyle='#0d1620';
+          var ix=x+(qp.x-x)*snap, iy=y+(qp.y-y)*snap, mw=QT.cell*1.08;
+          ctx.globalAlpha=Math.min(1,a*snap*1.7); ctx.fillStyle=PAL.ink;
           ctx.fillRect(ix-mw*0.5,iy-mw*0.5,mw+0.2,mw+0.2);
         }
-        /* secondary micro-particle emission */
         if(p.shape>0.78){
           ctx.globalAlpha=a*0.55;
           ctx.fillRect(x+sz*1.1,y-sz*0.7,sz*0.38,sz*0.38);
         }
-        /* sparse glowing embers with bloom */
-        if(((p.z>0.88 && p.shape>0.42) || fresh>0.72) && snap<0.55){
+        if(((p.depth>0.88&&p.shape>0.42)||fresh>0.72) && snap<0.55){
           ctx.globalCompositeOperation='lighter';
-          ctx.globalAlpha=a*0.6;
-          ctx.drawImage(glow,x-4,y-4,8,8);
+          ctx.globalAlpha=a*0.6; ctx.drawImage(glow,x-4,y-4,8,8);
           ctx.globalCompositeOperation='source-over';
         }
       }
       ctx.restore();
     }
-    function frame(u,dir){
+    function renderTransition(u,t,dir){
       if(!S){ resize(); if(!S) return; }
-      var t=performance.now()*0.001;
-      photo.style.opacity='0'; qrl.style.opacity='0'; cv.style.opacity='1';
-      if(badge) badge.style.opacity = dir==='p2q' ? String(1-ss(0.50,0.72,u)) : String(ss(0.32,0.58,u));
+      setLayers('fx');
+      if(badge) badge.style.opacity=String(dir==='p2q'?1-ss(0.50,0.74,u):ss(0.34,0.62,u));
       ctx.clearRect(0,0,S,S);
       atmosphere(u,t,dir);
       portraitLayer(u,t,dir);
       plateLayer(u,dir);
       particleLayer(u,t,dir);
-      matrixLayer(u,dir);   /* crisp modules land on top of the settled ash */
+      matrixLayer(u,dir);
     }
-    function reset(dir){
-      for(var i=0;i<P.length;i++){
-        var p=P[i];
-        p.x=dir==='p2q'?p.hx:p.tx; p.y=dir==='p2q'?p.hy:p.ty;
-        p.vx=0; p.vy=0;
+    /* ---- holds: Layer 1 is the real SVG; Layer 2 is decorative ash ------ */
+    function holdAvatar(t){
+      setLayers('avatar');
+      ctx.clearRect(0,0,S,S);
+      for(var k=0;k<motes.length;k++){
+        var d=motes[k];
+        var x=d.x+Math.sin(t*0.35+d.seed*9)*3;
+        var y=d.y+Math.cos(t*0.28+d.seed*7)*3;
+        var a=d.a*(0.45+0.55*Math.sin(t*1.1+d.seed*13));
+        ctx.globalAlpha=a; ctx.fillStyle=PAL.gold;
+        ctx.fillRect(x,y,d.s,d.s);
+        if(d.seed>0.82){ ctx.globalAlpha=a*0.5; ctx.drawImage(glow,x-3,y-3,6,6); }
       }
+      ctx.globalAlpha=1;
     }
-    function idle(){
+    function holdQR(t){
+      setLayers('qr');
+      ctx.clearRect(0,0,S,S);
+      /* frozen structure specks, only inside dark non-finder modules */
+      for(var i=0;i<qrDust.length;i++){
+        var d=qrDust[i];
+        ctx.globalAlpha=d.a; ctx.fillStyle=PAL.gold;
+        ctx.fillRect(d.x,d.y,d.s,d.s);
+      }
+      /* slowly drifting pale ash outside the coded square, inside the circle */
+      for(var j=0;j<rim.length;j++){
+        var m=rim[j], a=m.ang+t*0.10*(0.5+m.seed);
+        var r=m.rad+Math.sin(t*0.6+m.seed*9)*S*0.008;
+        ctx.globalAlpha=m.a*(0.6+0.4*Math.sin(t*0.9+m.seed*13));
+        ctx.fillStyle=PAL.gold;
+        ctx.fillRect(S/2+Math.cos(a)*r,S/2+Math.sin(a)*r,m.s,m.s);
+      }
+      ctx.globalAlpha=1;
+    }
+    function renderReduced(){
+      var e=currentElapsed();
+      var showQR=(e>=BOUNDS[3]&&e<BOUNDS[4]);
       cv.style.opacity='0'; ctx.clearRect(0,0,S,S);
+      photo.style.opacity=showQR?'0':'1';
+      qrl.style.opacity=showQR?'1':'0';
+      if(badge) badge.style.opacity=showQR?'0':'1';
+      lastMode='';
     }
-    function stop(){ if(raf){cancelAnimationFrame(raf);raf=0;} if(timer){clearTimeout(timer);timer=0;} }
-    function run(){
-      var t=(performance.now()-t0)%CYCLE;
+    /* ---- one time axis --------------------------------------------------- */
+    function phaseAt(e){
+      for(var i=PHASES.length-1;i>=0;i--)
+        if(e>=BOUNDS[i]) return {key:PHASES[i].key,u:(e-BOUNDS[i])/PHASES[i].ms};
+      return {key:'avatar',u:0};
+    }
+    function tick(){
+      raf=requestAnimationFrame(tick);
+      if(destroyed||printing||paused) return;
+      var e=currentElapsed(), t=nowClock()*0.001, nt=performance.now();
+      var ph=phaseAt(e);
       if(reduce){
-        stop(); idle();
-        photo.style.opacity=t<B?'1':'0'; qrl.style.opacity=t<B?'0':'1';
-        if(badge) badge.style.opacity=t<B?'1':'0';
-        timer=setTimeout(run,300); return;
+        if(nt-lastHold<160) return; lastHold=nt; renderReduced(); return;
       }
-      if(t<A){ stop(); idle(); photo.style.opacity='1'; qrl.style.opacity='0'; if(badge)badge.style.opacity='1'; timer=setTimeout(run,Math.max(8,A-t)); }
-      else if(t<B){ transition('p2q'); }
-      else if(t<C){ stop(); idle(); photo.style.opacity='0'; qrl.style.opacity='1'; if(badge)badge.style.opacity='0'; timer=setTimeout(run,Math.max(8,C-t)); }
-      else { transition('q2p'); }
-    }
-    function transition(dir){
-      stop(); reset(dir);
-      photo.style.opacity='0'; qrl.style.opacity='0';
-      function step(){
-        var t=(performance.now()-t0)%CYCLE;
-        var u=dir==='p2q' ? (t-A)/(B-A) : (t-C)/(CYCLE-C);
-        if(u<0 || u>=1){ run(); return; }
-        frame(u,dir);
-        raf=requestAnimationFrame(step);
+      if(ph.key==='avatar'||ph.key==='qr'){
+        if(nt-lastHold<32) return;      /* 30fps for the faint decorative layer */
+        lastHold=nt;
+        if(ph.key==='avatar') holdAvatar(t); else holdQR(t);
+      }else if(ph.key==='snap'||ph.key==='assemble'){
+        renderTransition((e-BOUNDS[1])/(BOUNDS[3]-BOUNDS[1]),t,'p2q');
+      }else{
+        renderTransition((e-BOUNDS[4])/(TOTAL-BOUNDS[4]),t,'q2p');
       }
-      frame(0.001,dir);
-      raf=requestAnimationFrame(step);
     }
+
+    /* ---- interaction ----------------------------------------------------- */
+    function requestForward(){
+      /* Hover/touch only shortens the remaining avatar hold; it never cuts a
+         running transition, and a QR state never restarts the cycle. */
+      var e=currentElapsed(), ph=phaseAt(e);
+      if(ph.key!=='avatar') return;
+      var remain=BOUNDS[1]-e;
+      if(remain>420) offset+=remain-380;
+    }
+    function onVisibility(){
+      if(document.hidden){
+        freeze();
+        if(raf){ cancelAnimationFrame(raf); raf=0; }
+      }else if(!raf && !destroyed){
+        thaw(); raf=requestAnimationFrame(tick);
+      }
+    }
+    function releaseGPU(){
+      try{ ctx.clearRect(0,0,S,S); cv.width=0; cv.height=0; }catch(e){}
+    }
+    function onPageHide(){
+      freeze();
+      if(raf){ cancelAnimationFrame(raf); raf=0; }
+      releaseGPU(); S=0;
+    }
+    function onPageShow(e){
+      if(e && e.persisted && !destroyed){
+        thaw(); resize();
+        if(!raf) raf=requestAnimationFrame(tick);
+      }
+    }
+    function onBeforePrint(){
+      printing=true; freeze(); lastMode='';
+      photo.style.opacity='1'; qrl.style.opacity='0'; cv.style.opacity='0';
+      if(badge) badge.style.opacity='1';
+    }
+    function onAfterPrint(){ printing=false; thaw(); lastMode=''; }
+    function onResize(){ S=0; resize(); lastMode=''; }
+    function destroy(){
+      destroyed=true;
+      if(raf){ cancelAnimationFrame(raf); raf=0; }
+      document.removeEventListener('visibilitychange',onVisibility);
+      window.removeEventListener('resize',onResize);
+      window.removeEventListener('pagehide',onPageHide);
+      window.removeEventListener('pageshow',onPageShow);
+      window.removeEventListener('beforeprint',onBeforePrint);
+      window.removeEventListener('afterprint',onAfterPrint);
+      circle.removeEventListener('pointerenter',requestForward);
+      circle.removeEventListener('touchstart',requestForward);
+      releaseGPU();
+      P=[]; CELLS=[]; dust=[]; motes=[]; qrDust=[]; rim=[];
+      img=grayImg=sample=QT=CF=glow=null;
+    }
+    /* Debug/acceptance hook. Never called by the page itself. */
+    window.__avatarFX={
+      config:function(){ return {ASSETS:ASSETS,PHASES:PHASES,TOTAL:TOTAL,
+        grid:G,quietZone:QR_DATA?QR_DATA.pad:4,
+        modules:QR_DATA?QR_DATA.n:0,particles:P.length}; },
+      pause:function(){ paused=true; freeze(); },
+      resume:function(){ paused=false; thaw(); },
+      seek:function(u,dir){ paused=true; freeze(); renderTransition(clamp(u,0,1),1.234,dir||'p2q'); },
+      hold:function(key,t){ paused=true; freeze(); if(key==='avatar') holdAvatar(t); else holdQR(t); },
+      phase:function(){ return phaseAt(currentElapsed()).key; },
+      ready:function(){ return !!sample; },
+      elapsed:function(){ return currentElapsed(); },
+      destroy:destroy
+    };
+
     resize();
-    window.addEventListener('resize',function(){ S=0; resize(); stop(); run(); });
-    run();
+    circle.addEventListener('pointerenter',requestForward);
+    circle.addEventListener('touchstart',requestForward,{passive:true});
+    document.addEventListener('visibilitychange',onVisibility);
+    window.addEventListener('resize',onResize);
+    window.addEventListener('pagehide',onPageHide);
+    window.addEventListener('pageshow',onPageShow);
+    window.addEventListener('beforeprint',onBeforePrint);
+    window.addEventListener('afterprint',onAfterPrint);
+    if(!document.hidden) raf=requestAnimationFrame(tick);
   })();
 
 })();
