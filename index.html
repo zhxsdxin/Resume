@@ -808,6 +808,7 @@
 
 
 
+
   /* ---------- Language switch ---------- */
   .hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
   .langlink{
@@ -4310,7 +4311,7 @@ var qrcode = function() {
          window. Fixing is independent of the ash fade, so the gathered QR
          stays fully opaque instead of dissolving while it is being printed. */
       '  float jit=fract(sin(seed*91.7)*43758.5453)*0.06;',
-      '  float fix=SS(0.68+jit,min(0.98+jit,0.99),d);',
+      '  float fix=SS(0.55+jit,min(0.85+jit,0.87),d);',
       '  float life=1.0-SS(0.94,1.0,d);',
       '  float gate=g+sin(u_time*1.9+ph)*0.018;',
       '  float rel=SS(gate-0.035,gate+0.055,d);',
@@ -4379,7 +4380,7 @@ var qrcode = function() {
          handover then finishes on the exact vector matrix, with no extra
          half-pixel fringe and no visible switch at the QR hold. The reverse
          starts from that same crisp code. */
-      '  float qF=SS(0.80,0.985,d);',
+      '  float qF=SS(0.94,1.0,d);',
       '  float tileFade=1.0-SS(0.90,1.0,qF);',
       '  v_fix=fix*tileFade;',
       '  v_mat=a_gate.w;',
@@ -4436,14 +4437,15 @@ var qrcode = function() {
          fades in underneath supplies the last half pixel, so the two layers
          together are exactly the SVG matrix and neither can bleed into a
          white module. */
-      '  float box=1.0-step(u_cell*0.5-0.15,max(abs(pxs.x),abs(pxs.y)));',
+      '  float box=1.0-step(u_cell*0.5+0.5,max(abs(pxs.x),abs(pxs.y)));',
       /* grey ash and ink tiles coexist for most of the gather: the code
          darkens and sharpens continuously instead of snapping into view */
       '  float b=smoothstep(0.05,0.95,snap);',
-      '  float aOrg=org*alpha*(1.0-b)*mix(0.025,1.0,v_mat);',
+      '  float aOrg=org*alpha*(1.0-b)*mix(0.025,1.0,v_mat)*(1.0-smoothstep(0.45,0.85,v_fix));',
       '  float aBox=box*v_fix;',
       '  float den=max(aOrg+aBox,0.0001);',
-      '  vec3 col=mix(v_col+vec3(0.90,0.86,0.79)*halo,vec3(0.0510,0.0863,0.1255),aBox/den);',
+      '  vec3 inkC=mix(vec3(0.86,0.84,0.80),vec3(0.0510,0.0863,0.1255),smoothstep(0.0,1.0,v_fix));',
+      '  vec3 col=mix(v_col+vec3(0.90,0.86,0.79)*halo,inkC,aBox/den);',
       '  float outA=clamp(aOrg+aBox,0.0,1.0);',
       '  if(outA<0.008) discard;',
       '  gl_FragColor=vec4(col,outA);',
@@ -4684,7 +4686,7 @@ var qrcode = function() {
     function renderCPUParticles(u,t,dir){
       var toQR=(dir==='p2q');
       var d=toQR?u:1-u;
-      var qF=ss(0.80,0.985,d), tileFade=1-ss(0.90,1.0,qF);
+      var qF=ss(0.94,1.0,d), tileFade=1-ss(0.90,1.0,qF);
       var wAtt=ss(0.42,0.66,d), snap=ss(0.68,0.98,d), life=1-ss(0.94,1.0,d);
       var WL=Math.sqrt(0.86*0.86+0.52*0.52);
       var W={x:0.86/WL,y:-0.52/WL}, N={x:0.52/WL,y:0.86/WL};
@@ -4695,7 +4697,7 @@ var qrcode = function() {
       for(var i=0;i<P.length;i+=step){
         var p=P[i], ap=p.avatarPosition, qp=p.qrPosition;
         var jit=fract(Math.sin(p.randomSeed*91.7)*43758.5453)*0.06;
-        var fix=ss(0.68+jit,Math.min(0.98+jit,0.99),d);
+        var fix=ss(0.55+jit,Math.min(0.85+jit,0.87),d);
         var gate=p.release+Math.sin(t*1.9+p.phase)*0.018;
         var rel=ss(gate-0.035,gate+0.055,d);
         if(rel<=0.001) continue;
@@ -4727,7 +4729,8 @@ var qrcode = function() {
         var sz=p.particleSize*(0.45+p.depth*0.9)*(1+0.25*ease)*shrink;
         var warm=ss(0.04,0.52,d);
         var b=ss(0.05,0.95,snap);
-        ctx.globalAlpha=clamp(a*(1-b)*0.82*(0.025+0.975*p.material),0,1);
+        var orgFade=1-ss(0.45,0.85,fix);
+        ctx.globalAlpha=clamp(a*(1-b)*0.82*(0.025+0.975*p.material)*orgFade,0,1);
         ctx.fillStyle=warm>0.45?p.particleColor.ash:p.particleColor.photo;
         if(p.category===2){
           ctx.fillRect(x,y,Math.max(0.5,sz*0.5),Math.max(0.5,sz*0.5));
@@ -4748,12 +4751,17 @@ var qrcode = function() {
           ctx.fill(); ctx.restore();
         }
         if(fix>0.001 && QT){
-          /* one complete real module, ink coloured and fully opaque; the four
-             grains coincide, so there is no seam and the CPU fallback prints
-             the same geometry as the SVG */
+          /* one complete real module; the four grains coincide and the block
+             covers the full module (slightly oversized) so the converged QR is
+             geometrically identical to the vector SVG and no half-pixel seam is
+             left for the SVG to fill later. The block also deepens from grey to
+             ink as it locks, so the QR darkens on its own without the real
+             vector image being layered on top. */
           var ix=x+(qp.x-x)*fix, iy=y+(qp.y-y)*fix;
-          var mw=QT.cell-0.04;
-          ctx.globalAlpha=fix*tileFade; ctx.fillStyle=PAL.ink;
+          var mw=QT.cell+0.06;
+          var deepen=ss(0,1,fix);
+          var cr=Math.round(220+(13-220)*deepen), cg=Math.round(215+(22-215)*deepen), cb=Math.round(202+(32-202)*deepen);
+          ctx.globalAlpha=fix*tileFade; ctx.fillStyle='rgb('+cr+','+cg+','+cb+')';
           ctx.fillRect(ix-mw*0.5,iy-mw*0.5,mw,mw);
         }
       }
@@ -5019,7 +5027,7 @@ var qrcode = function() {
     function renderTransition(u,t,dir){
       if(!S){ resize(); if(!S) return; }
       var d=dir==='p2q'?u:1-u;
-      var qFade=ss(0.80,0.985,d);
+      var qFade=ss(0.94,1.0,d);
       if(d>=0.995){ holdQR(t); return; }
       setLayers('fx');
       qrl.style.opacity=String(qFade);
