@@ -265,6 +265,7 @@
   /* ---------- Section titles ---------- */
   section{margin-top:17px;break-inside:auto;}
   .sec-title{
+    position:relative;
     margin:0 0 10px;
     display:flex;align-items:center;gap:9px;
     font-size:9.5pt;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
@@ -329,15 +330,12 @@
   .job-head .loc{font-size:8.4pt;color:var(--muted);}
 
   .what h3{
-    position:relative;padding-left:13px;
+    display:flex;align-items:center;gap:7px;
     margin:2px 0 0;
     font-size:11pt;font-weight:600;color:var(--ink);letter-spacing:.005em;
     break-after:avoid;page-break-after:avoid;
   }
-  .what h3::before{
-    content:"";position:absolute;left:0;top:.34em;
-    width:7px;height:7px;background:var(--accent);border-radius:1px;
-  }
+  .what h3::before{content:none;}
   .what .role{
     margin:2px 0 0;
     font-size:9.2pt;font-weight:600;color:var(--accent);letter-spacing:.045em;text-transform:uppercase;
@@ -444,12 +442,13 @@
     color:var(--accent);margin:0 0 4px;
     display:flex;align-items:center;gap:7px;
   }
-  .vendor-badge{
+  .vendor-badge, .emp-badge{
     display:inline-flex;align-items:center;justify-content:center;
     width:18px;height:18px;border-radius:4px;
     color:#fff;font-size:8.6pt;font-weight:700;letter-spacing:0;
     flex:none;
   }
+  .emp-badge{background:var(--accent);}
   .cert-group .vendor::after{content:"";flex:1;height:1px;background:var(--line);}
   .cert-group ul{margin:0;padding:0;list-style:none;}
   .cert-group ul li{
@@ -835,6 +834,37 @@
 
 
 
+
+
+
+  /* ============ enhancement: timeline dots / title underline / hover / progress ============ */
+  /* A: timeline node dots inherit each employer's colour */
+  .work-timeline > .job:nth-child(1) .tl-dot{background:#9e5648;}
+  .work-timeline > .job:nth-child(2) .tl-dot{background:#6e5c82;}
+  .work-timeline > .job:nth-child(3) .tl-dot{background:#2f7a74;}
+  .work-timeline > .job:nth-child(4) .tl-dot{background:#b07e3e;}
+
+  /* C: hover micro-interaction on a job row (interaction-only, no static clutter) */
+  .work-timeline .job{cursor:default;transition:background .15s ease;border-radius:6px;}
+  .work-timeline .job:hover{background:var(--tint);}
+  .tl-dot{transition:transform .16s ease, box-shadow .16s ease;}
+  .work-timeline .job:hover .tl-dot{transform:scale(1.28);box-shadow:0 0 0 4px rgba(42,78,124,.12);}
+  .tl-content{transition:transform .16s ease;}
+  .work-timeline .job:hover .tl-content{transform:translateX(2px);}
+
+  /* B: section-title underline that draws in on scroll */
+  .sec-title::after{
+    content:"";position:absolute;left:12px;top:100%;height:2px;width:0;
+    background:var(--accent);border-radius:2px;transition:width .5s ease;
+  }
+  .sec-title.in-view::after{width:46px;}
+
+  /* D: thin reading-progress bar pinned to the top */
+  .read-progress{position:fixed;top:0;left:0;right:0;height:2px;z-index:70;background:transparent;pointer-events:none;}
+  .read-progress-bar{height:100%;width:0;background:linear-gradient(90deg,#9e5648,var(--accent));transition:width .08s linear;}
+  @media print{.read-progress{display:none;}}
+  /* ============ end enhancement ============ */
+
   /* ---------- Language switch ---------- */
   .hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
   .langlink{
@@ -853,6 +883,8 @@
 </style>
 </head>
 <body>
+
+<div class="read-progress" aria-hidden="true"><div class="read-progress-bar"></div></div>
 
 <div class="toolbar">
   <span class="hint">A4 · 建议用 Chrome / Edge 打印，缩放 100%，背景默认启用</span>
@@ -1014,7 +1046,7 @@
             <span class="loc">Osaka, Japan</span>
           </div>
           <div class="what">
-            <h3>iSoftStone Japan Co., Ltd.</h3>
+            <h3><span class="emp-badge" style="background:#9e5648;">i</span>iSoftStone Japan Co., Ltd.</h3>
             <p class="role">IT Operations Engineer (Contract)</p>
             <p class="second">Seconded to Tencent Japan Co., Ltd. (Osaka) as IT Operations Engineer</p>
             <ul>
@@ -1052,7 +1084,7 @@
             <span class="loc">Tokyo, Japan</span>
           </div>
           <div class="what">
-            <h3>Dentsu Group Inc.</h3>
+            <h3><span class="emp-badge" style="background:#6e5c82;">D</span>Dentsu Group Inc.</h3>
             <p class="role">Group FR Office — Group FR Team, Senior Associate</p>
             <ul>
               <li>Automated <b>inquiry handling with Power Automate</b>, streamlining notifications and data management.</li>
@@ -1073,7 +1105,7 @@
             <span class="loc">Tokyo, Japan</span>
           </div>
           <div class="what">
-            <h3>ISFNET Inc.</h3>
+            <h3><span class="emp-badge" style="background:#2f7a74;">I</span>ISFNET Inc.</h3>
             <p class="role">IT Services, Technology Department — IT Engineer</p>
             <p class="second">Seconded to Hexagon Group – MSC Software (Tokyo) as IT Helpdesk</p>
             <ul>
@@ -1095,7 +1127,7 @@
             <span class="loc">Shanghai, China</span>
           </div>
           <div class="what">
-            <h3>IKEA (China) Investment Co., Ltd.</h3>
+            <h3><span class="emp-badge" style="background:#b07e3e;color:#1a1a1a;">I</span>IKEA (China) Investment Co., Ltd.</h3>
             <p class="role">IT Service Desk — Support Specialist</p>
             <ul>
               <li>Handled <b>IT tickets for IKEA co-workers globally via ServiceNow</b> across phone and chat channels.</li>
@@ -3765,6 +3797,28 @@ var qrcode = function() {
     });
   });
   navOnScroll();
+
+  /* ---- enhancement: reading progress + section-title reveal ---- */
+  var readBar = document.querySelector('.read-progress-bar');
+  function updateProgress(){
+    var doc = document.documentElement;
+    var max = (doc.scrollHeight - window.innerHeight) || 1;
+    var p = Math.max(0, Math.min(1, (window.scrollY || window.pageYOffset || 0) / max));
+    if(readBar) readBar.style.width = (p * 100).toFixed(2) + '%';
+  }
+  if(readBar){
+    window.addEventListener('scroll', function(){ window.requestAnimationFrame(updateProgress); }, {passive:true});
+    window.addEventListener('resize', updateProgress, {passive:true});
+    updateProgress();
+  }
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in-view'); io.unobserve(e.target); } });
+    }, {threshold:0.2, rootMargin:'0px 0px -10% 0px'});
+    document.querySelectorAll('.sec-title').forEach(function(t){ io.observe(t); });
+  } else {
+    document.querySelectorAll('.sec-title').forEach(function(t){ t.classList.add('in-view'); });
+  }
   /* ---- hero QR + contact card modal ---- */
   var QR_DATA = null;
   if(typeof qrcode === 'function'){
