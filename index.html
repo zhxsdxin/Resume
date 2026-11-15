@@ -211,20 +211,50 @@
   }
   .profile strong{color:var(--ink);font-weight:600;}
 
-  /* ---------- Stats strip ---------- */
+  /* ---------- Stats strip: signal-lamp cards ---------- */
   .stats-strip{
     display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 0;
   }
   .stat{
+    position:relative;overflow:hidden;
     background:var(--paper);border:1px solid var(--line);
-    border-top:2px solid var(--accent);border-radius:4px;
-    padding:7px 11px 8px;
+    border-top:0;border-radius:4px;
+    padding:9px 11px 8px 18px;
     display:flex;align-items:baseline;gap:7px;
     break-inside:avoid;page-break-inside:avoid;
+    transition:transform .2s cubic-bezier(.22,.61,.36,1),box-shadow .2s ease;
   }
+  .stat:hover{transform:scale(1.045);z-index:2;box-shadow:0 5px 16px rgba(19,29,41,.13);}
+  .stat:nth-child(1){--lamp:#d9a441;--d:0s;}
+  .stat:nth-child(2){--lamp:#3f9d93;--d:.18s;}
+  .stat:nth-child(3){--lamp:#2a4e7c;--d:.36s;}
+  .stat:nth-child(4){--lamp:#c45a3d;--d:.54s;}
+  /* top light bar switches on in sequence */
+  .stat::after{
+    content:"";position:absolute;left:0;top:0;width:100%;height:2px;
+    background:var(--lamp);transform:scaleX(0);transform-origin:left;
+    animation:barOn .55s cubic-bezier(.3,.8,.3,1) calc(var(--d) + .08s) forwards;
+  }
+  /* left indicator lamp lights up, then breathes softly */
+  .stat::before{
+    content:"";position:absolute;left:7px;top:12px;width:6px;height:6px;border-radius:50%;
+    background:var(--lamp);opacity:.22;
+    animation:lampOn .45s ease-out var(--d) forwards,
+              lampBreathe 3.2s ease-in-out calc(var(--d) + .45s) infinite;
+  }
+  @keyframes barOn{to{transform:scaleX(1);}}
+  @keyframes lampOn{to{opacity:1;box-shadow:0 0 7px 1px var(--lamp);}}
+  @keyframes lampBreathe{0%,100%{opacity:1;box-shadow:0 0 7px 1px var(--lamp);}50%{opacity:.6;box-shadow:0 0 3px 0 var(--lamp);}}
   .stat-num{
+    display:inline-block;transform-origin:center bottom;
     font-size:16pt;font-weight:600;color:var(--accent);
     line-height:1;letter-spacing:.01em;
+  }
+  /* idle: one random card gives its number a brief tick now and then */
+  .stat.is-tick .stat-num{animation:numTick .52s cubic-bezier(.3,.8,.3,1);}
+  @keyframes numTick{
+    0%,100%{transform:translateY(0) scale(1);color:var(--accent);}
+    38%{transform:translateY(-3px) scale(1.14);color:var(--lamp);}
   }
   .stat-lbl{
     font-size:8.2pt;color:var(--muted);
@@ -312,11 +342,21 @@
   .what .second{
     margin:3px 0 0;font-size:8.8pt;color:var(--muted);font-style:italic;
   }
-  .what .second b.client{
-    display:inline-block;font-style:normal;font-weight:700;color:var(--accent);
-    background:var(--tint);border:1px solid var(--line);
-    padding:1px 6px;border-radius:3px;
+  /* ---------- Company tags: faint outline only, zoom on hover, link to official site ---------- */
+  .company-tag,.what .second .client{
+    display:inline-block;text-decoration:none;font-style:normal;
+    color:var(--accent);background:transparent;
+    border:1px solid var(--line);border-radius:4px;
+    padding:1px 7px;font-weight:700;line-height:1.45;
+    transition:transform .18s ease,border-color .18s ease,color .18s ease;
   }
+  .company-tag:hover,.company-tag:focus-visible,
+  .what .second .client:hover,.what .second .client:focus-visible{
+    transform:scale(1.06);border-color:#c9a894;color:#8f3a24;
+    text-decoration:none;outline:none;
+  }
+  .what h3 .company-tag{font-size:11pt;font-weight:600;color:var(--ink);}
+  .what h3 .company-tag:hover,.what h3 .company-tag:focus-visible{color:#8f3a24;}
   /* client watermark on first role — faint QQ penguin PNG centered in the Provided→Supported body */
   .work-timeline > .job:first-child{overflow:hidden;}
   .work-timeline > .job:first-child .what > ul{position:relative;}
@@ -528,7 +568,7 @@
   @keyframes radarGrow{from{transform:scale(.05);opacity:0;}to{transform:scale(1);opacity:1;}}
   .reveal{opacity:0;transform:translateY(14px);animation:rise .6s ease forwards;}
   @keyframes rise{to{opacity:1;transform:none;}}
-  @media (prefers-reduced-motion: reduce){.reveal{animation:none;opacity:1;transform:none;}.radar-grow,.radar-grid-g,.radar-axis{animation:none;opacity:1;transform:none;}.radar-stroke{animation:none;stroke-dashoffset:0;}.radar-pt{animation:none;opacity:1;transform:none;}.radar-halo{animation:none;opacity:.38;transform:none;}}
+  @media (prefers-reduced-motion: reduce){.reveal{animation:none;opacity:1;transform:none;}.radar-grow,.radar-grid-g,.radar-axis{animation:none;opacity:1;transform:none;}.radar-stroke{animation:none;stroke-dashoffset:0;}.radar-pt{animation:none;opacity:1;transform:none;}.radar-halo{animation:none;opacity:.38;transform:none;}.rf-ring{animation:none;opacity:.7;transform:none;}.stat::before{animation:none;opacity:1;box-shadow:0 0 6px 1px var(--lamp);}.stat::after{animation:none;transform:scaleX(1);}.stat{transition:none;}.stat:hover{transform:none;box-shadow:none;}.stat.is-tick .stat-num{animation:none;}}
   .side-nav{position:fixed;right:14px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:11px;z-index:30;}
   .side-nav a{width:11px;height:11px;border-radius:50%;background:rgba(42,78,124,.28);border:1px solid rgba(42,78,124,.5);transition:.25s;text-decoration:none;}
   .side-nav a:hover{background:rgba(42,78,124,.6);}
@@ -548,6 +588,21 @@
   .cc-body .chips.cc-left{align-items:flex-end;}
   .cc-body .chips.cc-right{align-items:flex-start;}
   .cc-body .chip{max-width:100%;}
+  /* chip hover + radar linkage: hovering a chip lights up its radar axis */
+  .cc-body .chip{transition:transform .18s ease,background .18s ease,color .18s ease,box-shadow .18s ease;}
+  .cc-body .chip.is-peer{background:#f9e2d3;color:#a8452c;}
+  .cc-body .chip:hover{transform:scale(1.06);background:#f2cfba;color:#8f3a24;box-shadow:0 3px 10px rgba(196,90,61,.28);}
+  .radar-focus{pointer-events:none;}
+  .rf-item{opacity:0;transition:opacity .22s ease;}
+  .rf-item.is-active{opacity:1;}
+  .rf-spoke{stroke:#c45a3d;stroke-width:2.3;stroke-linecap:round;opacity:.82;}
+  .rf-ring{fill:none;stroke:#a8452c;stroke-width:1.9;transform-box:fill-box;transform-origin:center;}
+  .rf-dot{fill:#a8452c;opacity:.92;}
+  .rf-item.is-active .rf-ring{animation:rfPulse 1.5s ease-out infinite;}
+  @keyframes rfPulse{0%{transform:scale(.55);opacity:.85;}100%{transform:scale(2.1);opacity:0;}}
+  .radar-axis.is-active{fill:#a8452c;font-weight:700;}
+  .cc-body.cc-focus .radar-axis:not(.is-active){opacity:.42!important;}
+  .cc-body.cc-focus .radar-pt:not(.is-active){opacity:.35!important;}
   .cc-body .radar-wrap{grid-column:2;margin:0;display:flex;justify-content:center;align-items:center;}
   .cc-body .radar-wrap svg{width:100%;max-width:200px;height:auto;}
   @media screen and (max-width:680px){
@@ -563,6 +618,18 @@
     .reveal{opacity:1!important;transform:none!important;animation:none!important;}
     .cc-body{grid-template-columns:1fr 190px 1fr;gap:9px;}
     .cc-body .radar-wrap svg{max-width:190px;}
+    .radar-focus{display:none!important;}
+    .cc-body .chip{transform:none!important;box-shadow:none!important;}
+    .cc-body.cc-focus .radar-axis:not(.is-active){opacity:1!important;}
+    .cc-body.cc-focus .radar-pt:not(.is-active){opacity:1!important;}
+    .faq-a{max-height:none!important;opacity:1!important;overflow:visible!important;}
+    .faq-q::after{display:none!important;}
+    .faq-q{padding-right:0!important;}
+    .stat{transform:none!important;box-shadow:none!important;transition:none!important;}
+    .stat.is-tick .stat-num{animation:none!important;transform:none!important;}
+    .stat::before{animation:none!important;opacity:1!important;box-shadow:none!important;}
+    .stat::after{animation:none!important;transform:scaleX(1)!important;}
+    .company-tag,.what .second .client{transform:none!important;box-shadow:none!important;background:transparent!important;}
   }
   /* ===== Contact card modal ===== */
   .qr-modal{
@@ -868,9 +935,19 @@
   /* ---------- Recruiter FAQ (s7) ---------- */
   .faq{display:flex;flex-direction:column;gap:11px;}
   .faq-item{border-left:3px solid var(--line);padding:2px 0 2px 12px;break-inside:avoid;page-break-inside:avoid;}
-  .faq-q{font-size:9.2pt;font-weight:700;color:var(--accent);margin:0 0 3px;line-height:1.4;}
-  .faq-a{font-size:8.8pt;line-height:1.55;color:var(--text);margin:0;}
+  .faq-q{font-size:9.2pt;font-weight:700;color:var(--accent);margin:0 0 3px;line-height:1.4;cursor:pointer;position:relative;padding-right:16px;user-select:none;transition:color .18s ease;}
+  .faq-q:hover{color:#c45a3d;}
+  .faq-q::after{content:"\25BE";position:absolute;right:1px;top:0;display:inline-block;font-size:10pt;line-height:1.4;color:#c45a3d;transition:transform .22s ease;}
+  .faq-item.open .faq-q::after{transform:rotate(180deg);}
+  .faq-a{font-size:8.8pt;line-height:1.55;color:var(--text);margin:0;max-height:0;overflow:hidden;opacity:0;transition:max-height .28s ease,opacity .22s ease;}
+  .faq-item.open .faq-a{max-height:320px;opacity:1;}
   .faq-a b{color:var(--ink);}
+
+
+
+
+
+
 
 
 
@@ -1026,7 +1103,7 @@
             <polygon class="radar-grid" points="130.0,30.0 196.6,78.4 171.1,156.6 88.9,156.6 63.4,78.4"/>
             <polygon class="radar-grid" points="130.0,47.5 179.9,83.8 160.9,142.5 99.1,142.5 80.1,83.8"/>
             <polygon class="radar-grid" points="130.0,65.0 163.3,89.2 150.6,128.3 109.4,128.3 96.7,89.2"/>
-            <g stroke="#d3d1c7" stroke-width=".6"><line x1="130" y1="100" x2="130.0" y2="30.0"/><line x1="130" y1="100" x2="196.6" y2="78.4"/><line x1="130" y1="100" x2="171.1" y2="156.6"/><line x1="130" y1="100" x2="88.9" y2="156.6"/><line x1="130" y1="100" x2="63.4" y2="78.4"/></g>
+            <g stroke="#d3d1c7" stroke-width=".6"><line x1="130" y1="100" x2="130.0" y2="33.5"/><line x1="130" y1="100" x2="189.9" y2="80.5"/><line x1="130" y1="100" x2="167.9" y2="152.1"/><line x1="130" y1="100" x2="97.9" y2="144.2"/><line x1="130" y1="100" x2="82.1" y2="84.4"/></g>
           </g>
           <g class="radar-grow">
             <polygon class="radar-shape" points="130.0,33.5 189.9,80.5 167.9,152.1 97.9,144.2 82.1,84.4"/>
@@ -1044,6 +1121,13 @@
           <text class="radar-axis" x="181.7" y="174.2" text-anchor="middle">Tech Support</text>
           <text class="radar-axis" x="78.3" y="174.2" text-anchor="middle">Cloud</text>
           <text class="radar-axis" x="46.3" y="75.8" text-anchor="middle">Scripting</text>
+          <g class="radar-focus" aria-hidden="true">
+            <g class="rf-item"><line class="rf-spoke" x1="130" y1="100" x2="130.0" y2="33.5"/><circle class="rf-ring" cx="130.0" cy="33.5" r="6.5"/><circle class="rf-dot" cx="130.0" cy="33.5" r="3.1"/></g>
+            <g class="rf-item"><line class="rf-spoke" x1="130" y1="100" x2="189.9" y2="80.5"/><circle class="rf-ring" cx="189.9" cy="80.5" r="6.5"/><circle class="rf-dot" cx="189.9" cy="80.5" r="3.1"/></g>
+            <g class="rf-item"><line class="rf-spoke" x1="130" y1="100" x2="167.9" y2="152.1"/><circle class="rf-ring" cx="167.9" cy="152.1" r="6.5"/><circle class="rf-dot" cx="167.9" cy="152.1" r="3.1"/></g>
+            <g class="rf-item"><line class="rf-spoke" x1="130" y1="100" x2="97.9" y2="144.2"/><circle class="rf-ring" cx="97.9" cy="144.2" r="6.5"/><circle class="rf-dot" cx="97.9" cy="144.2" r="3.1"/></g>
+            <g class="rf-item"><line class="rf-spoke" x1="130" y1="100" x2="82.1" y2="84.4"/><circle class="rf-ring" cx="82.1" cy="84.4" r="6.5"/><circle class="rf-dot" cx="82.1" cy="84.4" r="3.1"/></g>
+          </g>
         </svg>
       </div>
       <div class="chips cc-right">
@@ -1075,9 +1159,9 @@
             <span class="loc">Osaka, Japan</span>
           </div>
           <div class="what">
-            <h3><span class="emp-badge" style="background:#9e5648;">i</span>iSoftStone Japan Co., Ltd.</h3>
+            <h3><span class="emp-badge" style="background:#9e5648;">i</span><a class="company-tag" href="https://www.isoftstone.jp/" target="_blank" rel="noopener noreferrer">iSoftStone Japan Co., Ltd.</a></h3>
             <p class="role">IT Operations Engineer</p>
-            <p class="second">Seconded to <b class="client">Tencent Japan Co., Ltd.</b> as IT Operations Engineer</p>
+            <p class="second">Seconded to <a class="client" href="https://tencentjapan.com/" target="_blank" rel="noopener noreferrer">Tencent Japan Co., Ltd.</a> as IT Operations Engineer</p>
             <ul>
               <li>Provided <b>IT support for the Japan office (game studio) via ServiceNow and WeCom</b>, diagnosing and resolving hardware/software issues and supporting day-to-day IT operations.</li>
               <li>Managed the <b>full employee IT lifecycle</b> — onboarding/offboarding, account provisioning, access management and equipment allocation.</li>
@@ -1113,7 +1197,7 @@
             <span class="loc">Tokyo, Japan</span>
           </div>
           <div class="what">
-            <h3><span class="emp-badge" style="background:#6e5c82;">D</span>Dentsu Group Inc.</h3>
+            <h3><span class="emp-badge" style="background:#6e5c82;">D</span><a class="company-tag" href="https://www.group.dentsu.com/en/" target="_blank" rel="noopener noreferrer">Dentsu Group Inc.</a></h3>
             <p class="role">Group FR Office — Group FR Team, Senior Associate</p>
             <ul>
               <li>Automated <b>inquiry handling with Power Automate</b>, streamlining notifications and data management.</li>
@@ -1134,9 +1218,9 @@
             <span class="loc">Tokyo, Japan</span>
           </div>
           <div class="what">
-            <h3><span class="emp-badge" style="background:#2f7a74;">I</span>ISFNET Inc.</h3>
+            <h3><span class="emp-badge" style="background:#2f7a74;">I</span><a class="company-tag" href="https://www.isfnet.co.jp/" target="_blank" rel="noopener noreferrer">ISFNET Inc.</a></h3>
             <p class="role">IT Services, Technology Department — IT Engineer</p>
-            <p class="second">Seconded to Hexagon Group – MSC Software (Tokyo) as IT Helpdesk</p>
+            <p class="second">Seconded to <a class="company-tag" href="https://hexagon.com/" target="_blank" rel="noopener noreferrer">Hexagon Group – MSC Software (Tokyo)</a> as IT Helpdesk</p>
             <ul>
               <li>Handled <b>IT tickets for Hexagon Japan co-workers using ServiceNow and Confluence</b>.</li>
               <li>Developed <b>PowerShell scripts to automate termination of system access for leavers</b>.</li>
@@ -1156,7 +1240,7 @@
             <span class="loc">Shanghai, China</span>
           </div>
           <div class="what">
-            <h3><span class="emp-badge" style="background:#b07e3e;color:#1a1a1a;">I</span>IKEA (China) Investment Co., Ltd.</h3>
+            <h3><span class="emp-badge" style="background:#b07e3e;color:#1a1a1a;">I</span><a class="company-tag" href="https://www.ikea.cn/cn/zh/" target="_blank" rel="noopener noreferrer">IKEA (China) Investment Co., Ltd.</a></h3>
             <p class="role">IT Service Desk — Support Specialist</p>
             <ul>
               <li>Handled <b>IT tickets for IKEA co-workers globally via ServiceNow</b> across phone and chat channels.</li>
@@ -5386,6 +5470,80 @@ var qrcode = function() {
 
 })();
 
+</script>
+<script>
+/* Core Competencies 标签与雷达图联动 */
+(function(){
+  var cc=document.querySelector('.cc-body');
+  if(!cc) return;
+  /* 顺序：左 7 个 + 右 6 个；值为雷达轴序号 0顶/1右上/2右下/3左下/4左上 */
+  var axisOf=[0,2,0,0,1,3,3, 4,4,1,1,3,2];
+  var chips=cc.querySelectorAll('.chips .chip');
+  var items=cc.querySelectorAll('.radar-focus .rf-item');
+  var axes=cc.querySelectorAll('.radar-axis');
+  var pts=cc.querySelectorAll('.radar-pt');
+  function paint(a,self){
+    if(a<0) cc.classList.remove('cc-focus'); else cc.classList.add('cc-focus');
+    for(var i=0;i<items.length;i++) items[i].classList.toggle('is-active',i===a);
+    for(var j=0;j<axes.length;j++) axes[j].classList.toggle('is-active',j===a);
+    for(var k=0;k<pts.length;k++) pts[k].classList.toggle('is-active',k===a);
+    for(var c=0;c<chips.length;c++)
+      chips[c].classList.toggle('is-peer',a>=0 && axisOf[c]===a && chips[c]!==self);
+  }
+  for(var n=0;n<chips.length && n<axisOf.length;n++){
+    (function(a,chip){
+      chip.addEventListener('mouseenter',function(){paint(a,chip);});
+      chip.addEventListener('mouseleave',function(){paint(-1,null);});
+    })(axisOf[n],chips[n]);
+  }
+})();
+/* Recruiter FAQ 默认折叠，点击问题展开 */
+(function(){
+  var items=document.querySelectorAll('.faq .faq-item');
+  for(var i=0;i<items.length;i++){
+    (function(item){
+      var q=item.querySelector('.faq-q');
+      if(!q) return;
+      q.setAttribute('role','button');
+      q.setAttribute('tabindex','0');
+      q.setAttribute('aria-expanded','false');
+      function toggle(){
+        var open=item.classList.toggle('open');
+        q.setAttribute('aria-expanded',open?'true':'false');
+      }
+      q.addEventListener('click',toggle);
+      q.addEventListener('keydown',function(e){
+        if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}
+      });
+    })(items[i]);
+  }
+})();
+</script>
+<script>
+/* Idle signal: every few seconds one random stat card gives its number a brief tick. */
+(function(){
+  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var cards = Array.prototype.slice.call(document.querySelectorAll('.stats-strip .stat'));
+  if(cards.length < 2) return;
+  var last = -1, timer = null;
+  function schedule(){
+    window.clearTimeout(timer);
+    timer = window.setTimeout(tick, 3200 + Math.random()*2600);
+  }
+  function tick(){
+    if(document.hidden || document.querySelector('.stats-strip .stat:hover')){ schedule(); return; }
+    var i = Math.floor(Math.random()*cards.length);
+    if(i === last) i = (i + 1) % cards.length;
+    last = i;
+    var card = cards[i];
+    card.classList.remove('is-tick');
+    void card.offsetWidth;
+    card.classList.add('is-tick');
+    window.setTimeout(function(){ card.classList.remove('is-tick'); }, 560);
+    schedule();
+  }
+  window.setTimeout(schedule, 1600);
+})();
 </script>
 </body>
 </html>
