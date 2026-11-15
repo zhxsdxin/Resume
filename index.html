@@ -865,6 +865,26 @@
   @media print{.read-progress{display:none;}}
   /* ============ end enhancement ============ */
 
+  /* ---------- Career objective (求职意向) ---------- */
+  .intent{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));
+    gap:9px 20px;margin:0 0 14px;padding:10px 13px;
+    background:var(--tint);border-left:3px solid var(--accent);border-radius:0 5px 5px 0;
+  }
+  .intent-item{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .intent-k{font-size:7.6pt;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+  .intent-v{font-size:9pt;font-weight:600;color:var(--text);}
+  .intent-v .ph{font-weight:500;}
+  .ph{color:#c0563a;}            /* placeholder — fill in before publishing */
+
+  /* ---------- Recruiter FAQ (s7) ---------- */
+  .faq{display:flex;flex-direction:column;gap:11px;}
+  .faq-item{border-left:3px solid var(--line);padding:2px 0 2px 12px;break-inside:avoid;page-break-inside:avoid;}
+  .faq-q{font-size:9.2pt;font-weight:700;color:var(--accent);margin:0 0 3px;line-height:1.4;}
+  .faq-a{font-size:8.8pt;line-height:1.55;color:var(--text);margin:0;}
+  .faq-a b{color:var(--ink);}
+
+
   /* ---------- Language switch ---------- */
   .hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
   .langlink{
@@ -981,6 +1001,15 @@
     <div class="stat"><span class="stat-num">3</span><span class="stat-lbl">Languages</span></div>
     <div class="stat"><span class="stat-num">4</span><span class="stat-lbl">Employers</span></div>
     <div class="stat"><span class="stat-num">14</span><span class="stat-lbl">Certifications</span></div>
+  </div>
+
+  <!-- ============ CAREER OBJECTIVE ============ -->
+  <div class="intent">
+    <div class="intent-item"><span class="intent-k">Target Role</span><span class="intent-v">IT Operations Engineer / IT Support Lead</span></div>
+    <div class="intent-item"><span class="intent-k">Location</span><span class="intent-v">Japan (Osaka / Tokyo preferred); open to remote</span></div>
+    <div class="intent-item"><span class="intent-k">Employment</span><span class="intent-v">Permanent or contract</span></div>
+    <div class="intent-item"><span class="intent-k">Availability</span><span class="intent-v"><span class="ph">TBD — e.g. 1 month notice</span></span></div>
+    <div class="intent-item"><span class="intent-k">Expected Salary</span><span class="intent-v"><span class="ph">TBD — e.g. ¥X.XM / year, negotiable</span></span></div>
   </div>
 
   <!-- ============ CORE COMPETENCIES ============ -->
@@ -1311,6 +1340,23 @@
     </ul>
   </section>
 
+  <!-- ============ RECRUITER FAQ ============ -->
+  <section id="s7" class="reveal">
+    <h2 class="sec-title">
+      <span class="sec-num">07</span>
+      <svg class="sec-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Recruiter FAQ
+    </h2>
+    <div class="faq">
+      <div class="faq-item"><p class="faq-q">Why are you looking for a new opportunity?</p><p class="faq-a">I've built a full IT-operations toolkit across Japan and China — end-user support, asset &amp; licence management, server/monitoring and automation. I'm now looking for a role with broader scope where I can own IT operations and tooling end to end.</p></div>
+      <div class="faq-item"><p class="faq-q">What is your expected salary?</p><p class="faq-a"><span class="ph">TBD — e.g. ¥X.XM / year, negotiable</span></p></div>
+      <div class="faq-item"><p class="faq-q">Where do you want to work, and what is your visa status?</p><p class="faq-a">Based in Japan (Osaka / Tokyo preferred), Japanese <b>JLPT N1</b> and fluent English; open to remote. Visa: Highly Skilled Professional (i)(b), valid until Oct 2030.</p></div>
+      <div class="faq-item"><p class="faq-q">When can you start?</p><p class="faq-a"><span class="ph">TBD — e.g. 1 month notice</span></p></div>
+      <div class="faq-item"><p class="faq-q">How deep is your hands-on technical experience?</p><p class="faq-a">Daily tools include <b>ServiceNow</b>, Microsoft 365 / Intune, <b>Zabbix</b>, VMware ESXi, Windows and macOS; I also build automation in PowerShell / Python and internal tools in Node.js (licence-management module) and Tauri (printer driver installer).</p></div>
+      <div class="faq-item"><p class="faq-q">What is your career goal?</p><p class="faq-a">Grow into an IT operations lead / governance role that combines front-line support with the scripting and tooling I already build — turning repetitive ops work into standardized, automated processes.</p></div>
+    </div>
+  </section>
+
   <!-- ============ FOOTER ============ -->
   <footer class="sheet-footer">
     <span>George Zhang · IT Operations Engineer · zhxsdxin&#64;gmail&#46;com</span>
@@ -1326,6 +1372,7 @@
     <a href="#s4" title="Language Proficiency" aria-label="Language Proficiency"></a>
     <a href="#s5" title="Certifications" aria-label="Certifications"></a>
     <a href="#s6" title="Awards" aria-label="Awards"></a>
+    <a href="#s7" title="Recruiter FAQ" aria-label="Recruiter FAQ"></a>
   </nav>
 
   <!-- location toast (shown when the location icon/label is tapped) -->

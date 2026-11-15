@@ -865,6 +865,26 @@
   @media print{.read-progress{display:none;}}
   /* ============ end enhancement ============ */
 
+  /* ---------- Career objective (求职意向) ---------- */
+  .intent{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));
+    gap:9px 20px;margin:0 0 14px;padding:10px 13px;
+    background:var(--tint);border-left:3px solid var(--accent);border-radius:0 5px 5px 0;
+  }
+  .intent-item{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .intent-k{font-size:7.6pt;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+  .intent-v{font-size:9pt;font-weight:600;color:var(--text);}
+  .intent-v .ph{font-weight:500;}
+  .ph{color:#c0563a;}            /* placeholder — fill in before publishing */
+
+  /* ---------- Recruiter FAQ (s7) ---------- */
+  .faq{display:flex;flex-direction:column;gap:11px;}
+  .faq-item{border-left:3px solid var(--line);padding:2px 0 2px 12px;break-inside:avoid;page-break-inside:avoid;}
+  .faq-q{font-size:9.2pt;font-weight:700;color:var(--accent);margin:0 0 3px;line-height:1.4;}
+  .faq-a{font-size:8.8pt;line-height:1.55;color:var(--text);margin:0;}
+  .faq-a b{color:var(--ink);}
+
+
   /* ---------- Language switch ---------- */
   .hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
   .langlink{
@@ -980,6 +1000,15 @@
     <div class="stat"><span class="stat-num">3</span><span class="stat-lbl">対応言語</span></div>
     <div class="stat"><span class="stat-num">4</span><span class="stat-lbl">勤務社数</span></div>
     <div class="stat"><span class="stat-num">14</span><span class="stat-lbl">保有資格</span></div>
+  </div>
+
+  <!-- ============ CAREER OBJECTIVE ============ -->
+  <div class="intent">
+    <div class="intent-item"><span class="intent-k">希望ポジション</span><span class="intent-v">IT運用エンジニア / ITサポートリード</span></div>
+    <div class="intent-item"><span class="intent-k">勤務地</span><span class="intent-v">日本（大阪・東京優先）；リモート可</span></div>
+    <div class="intent-item"><span class="intent-k">雇用形態</span><span class="intent-v">正社員または契約社員</span></div>
+    <div class="intent-item"><span class="intent-k">入社可能時期</span><span class="intent-v"><span class="ph">未定 — 例：1ヶ月程度の引継ぎ</span></span></div>
+    <div class="intent-item"><span class="intent-k">希望年収</span><span class="intent-v"><span class="ph">未定 — 例：¥XXX万／年、応相談</span></span></div>
   </div>
 
   <!-- ============ CORE COMPETENCIES ============ -->
@@ -1310,6 +1339,23 @@
     </ul>
   </section>
 
+  <!-- ============ RECRUITER FAQ ============ -->
+  <section id="s7" class="reveal">
+    <h2 class="sec-title">
+      <span class="sec-num">07</span>
+      <svg class="sec-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      採用担当者FAQ
+    </h2>
+    <div class="faq">
+      <div class="faq-item"><p class="faq-q">なぜ新しい機会を探していますか？</p><p class="faq-a">日本と中国で一連のIT運用スキルを習得しました——エンドユーザーサポート、資産・ライセンス管理、サーバー／監視、そして自動化。より広い範囲でIT運用とツール導入を一端から担える役割を探しています。</p></div>
+      <div class="faq-item"><p class="faq-q">希望年収はいくらですか？</p><p class="faq-a"><span class="ph">未定 — 例：¥XXX万／年、応相談</span></p></div>
+      <div class="faq-item"><p class="faq-q">どこで働きたいですか？ 在留資格は？</p><p class="faq-a">日本在住（大阪・東京優先）、日本語<b>JLPT N1</b>・英語流暢、リモート可。在留資格：高度専門職1号ロ、2030年10月まで有効。</p></div>
+      <div class="faq-item"><p class="faq-q">いつから入社できますか？</p><p class="faq-a"><span class="ph">未定 — 例：1ヶ月程度の引継ぎ</span></p></div>
+      <div class="faq-item"><p class="faq-q">実務の技術的な深さは？</p><p class="faq-a">日常的に使用するツールは<b>ServiceNow</b>、Microsoft 365／Intune、<b>Zabbix</b>、VMware ESXi、Windows、macOS。さらにPowerShell／Pythonで自動化、Node.js（ライセンス管理モジュール）やTauri（プリンタードライバー導入ツール）で社内ツールを開発しています。</p></div>
+      <div class="faq-item"><p class="faq-q">キャリアの目標は？</p><p class="faq-a">最前線のサポートと、自身が開発するスクリプト・ツールを組み合わせたIT運用リード／ガバナンス職へ成長することが目標です。反復的な運用業務を標準化・自動化されたプロセスへと変えることです。</p></div>
+    </div>
+  </section>
+
   <!-- ============ FOOTER ============ -->
   <footer class="sheet-footer">
     <span>George Zhang · IT運用エンジニア · zhxsdxin&#64;gmail&#46;com</span>
@@ -1325,6 +1371,7 @@
     <a href="#s4" title="語学力" aria-label="語学力"></a>
     <a href="#s5" title="ベンダー資格" aria-label="ベンダー資格"></a>
     <a href="#s6" title="受賞歴" aria-label="受賞歴"></a>
+    <a href="#s7" title="採用担当者FAQ" aria-label="採用担当者FAQ"></a>
   </nav>
 
   <!-- location toast (shown when the location icon/label is tapped) -->
