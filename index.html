@@ -246,15 +246,8 @@
   @keyframes lampOn{to{opacity:1;box-shadow:0 0 7px 1px var(--lamp);}}
   @keyframes lampBreathe{0%,100%{opacity:1;box-shadow:0 0 7px 1px var(--lamp);}50%{opacity:.6;box-shadow:0 0 3px 0 var(--lamp);}}
   .stat-num{
-    display:inline-block;transform-origin:center bottom;
     font-size:16pt;font-weight:600;color:var(--accent);
     line-height:1;letter-spacing:.01em;
-  }
-  /* idle: one random card gives its number a brief tick now and then */
-  .stat.is-tick .stat-num{animation:numTick .52s cubic-bezier(.3,.8,.3,1);}
-  @keyframes numTick{
-    0%,100%{transform:translateY(0) scale(1);color:var(--accent);}
-    38%{transform:translateY(-3px) scale(1.14);color:var(--lamp);}
   }
   .stat-lbl{
     font-size:8.2pt;color:var(--muted);
@@ -342,11 +335,11 @@
   .what .second{
     margin:3px 0 0;font-size:8.8pt;color:var(--muted);font-style:italic;
   }
-  /* ---------- Company tags: faint outline only, zoom on hover, link to official site ---------- */
+  /* ---------- Company tags: outline appears only on hover, link to official site ---------- */
   .company-tag,.what .second .client{
     display:inline-block;text-decoration:none;font-style:normal;
     color:var(--accent);background:transparent;
-    border:1px solid var(--line);border-radius:4px;
+    border:1px solid transparent;border-radius:4px;
     padding:1px 7px;font-weight:700;line-height:1.45;
     transition:transform .18s ease,border-color .18s ease,color .18s ease;
   }
@@ -430,6 +423,19 @@
   .edu .school{margin:4px 0 0;font-size:9.4pt;font-weight:600;color:var(--ink);line-height:1.35;}
   .edu .degree{margin:3px 0 0;font-size:8.8pt;color:var(--ink-soft);line-height:1.4;}
   .edu .extra{margin:3px 0 0;font-size:8.3pt;color:var(--muted);}
+  .edu .extra.merit-line{margin-top:5px;}
+  .merit-badge{
+    display:inline-block;
+    padding:2px 9px;border-radius:11px;
+    background:rgba(236,155,114,.13);
+    color:#8f3a24;font-size:8.2pt;font-weight:700;letter-spacing:.02em;
+    transform-origin:left center;animation:meritHop 2.2s ease-in-out infinite;
+  }
+  @keyframes meritHop{
+    0%,76%,100%{transform:translateY(0) scale(1);}
+    84%{transform:translateY(-3px) scale(1.05);}
+    92%{transform:translateY(1px) scale(.98);}
+  }
 
   /* ---------- Languages (with proficiency dots) ---------- */
   .lang-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;}
@@ -446,9 +452,19 @@
   .lang .dots{display:inline-flex;gap:3px;align-items:center;}
   .lang .dots i{
     width:6px;height:6px;border-radius:50%;background:var(--line);
-    display:inline-block;
+    display:inline-block;transform-origin:center;
   }
   .lang .dots i.on{background:var(--accent);}
+  @keyframes langDotPop{
+    0%,72%,100%{transform:translateY(0) scale(1);box-shadow:none;}
+    80%{transform:translateY(-4px) scale(1.6);box-shadow:0 3px 7px rgba(196,90,61,.35);}
+    90%{transform:translateY(1px) scale(.9);box-shadow:none;}
+  }
+  .lang-grid.in-view .dots i{animation:langDotPop 1.6s cubic-bezier(.3,.8,.4,1) infinite;}
+  .lang-grid.in-view .dots i:nth-child(2){animation-delay:.09s;}
+  .lang-grid.in-view .dots i:nth-child(3){animation-delay:.18s;}
+  .lang-grid.in-view .dots i:nth-child(4){animation-delay:.27s;}
+  .lang-grid.in-view .dots i:nth-child(5){animation-delay:.36s;}
   .lang .name em{font-style:normal;font-size:8.2pt;color:var(--muted);font-weight:500;}
   .lang ul{margin:6px 0 0;padding:0;list-style:none;}
   .lang ul li{
@@ -568,7 +584,8 @@
   @keyframes radarGrow{from{transform:scale(.05);opacity:0;}to{transform:scale(1);opacity:1;}}
   .reveal{opacity:0;transform:translateY(14px);animation:rise .6s ease forwards;}
   @keyframes rise{to{opacity:1;transform:none;}}
-  @media (prefers-reduced-motion: reduce){.reveal{animation:none;opacity:1;transform:none;}.radar-grow,.radar-grid-g,.radar-axis{animation:none;opacity:1;transform:none;}.radar-stroke{animation:none;stroke-dashoffset:0;}.radar-pt{animation:none;opacity:1;transform:none;}.radar-halo{animation:none;opacity:.38;transform:none;}.rf-ring{animation:none;opacity:.7;transform:none;}.stat::before{animation:none;opacity:1;box-shadow:0 0 6px 1px var(--lamp);}.stat::after{animation:none;transform:scaleX(1);}.stat{transition:none;}.stat:hover{transform:none;box-shadow:none;}.stat.is-tick .stat-num{animation:none;}}
+  @media (prefers-reduced-motion: reduce){.reveal{animation:none;opacity:1;transform:none;}.radar-grow,.radar-grid-g,.radar-axis{animation:none;opacity:1;transform:none;}.radar-stroke{animation:none;stroke-dashoffset:0;}.radar-pt{animation:none;opacity:1;transform:none;}.radar-halo{animation:none;opacity:.38;transform:none;}.rf-ring{animation:none;opacity:.7;transform:none;}.stat::before{animation:none;opacity:1;box-shadow:0 0 6px 1px var(--lamp);}.stat::after{animation:none;transform:scaleX(1);}.stat{transition:none;}.stat:hover{transform:none;box-shadow:none;}}
+  @media (prefers-reduced-motion: reduce){.lang-grid.in-view .dots i{animation:none!important;transform:none!important;box-shadow:none!important;}.merit-badge{animation:none!important;transform:none!important;}}
   .side-nav{position:fixed;right:14px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:11px;z-index:30;}
   .side-nav a{width:11px;height:11px;border-radius:50%;background:rgba(42,78,124,.28);border:1px solid rgba(42,78,124,.5);transition:.25s;text-decoration:none;}
   .side-nav a:hover{background:rgba(42,78,124,.6);}
@@ -592,6 +609,7 @@
   .cc-body .chip{transition:transform .18s ease,background .18s ease,color .18s ease,box-shadow .18s ease;}
   .cc-body .chip.is-peer{background:#f9e2d3;color:#a8452c;}
   .cc-body .chip:hover{transform:scale(1.06);background:#f2cfba;color:#8f3a24;box-shadow:0 3px 10px rgba(196,90,61,.28);}
+  .cc-body .chip.is-tapped{transform:scale(1.06);background:#f2cfba;color:#8f3a24;box-shadow:0 3px 10px rgba(196,90,61,.28);}
   .radar-focus{pointer-events:none;}
   .rf-item{opacity:0;transition:opacity .22s ease;}
   .rf-item.is-active{opacity:1;}
@@ -626,10 +644,11 @@
     .faq-q::after{display:none!important;}
     .faq-q{padding-right:0!important;}
     .stat{transform:none!important;box-shadow:none!important;transition:none!important;}
-    .stat.is-tick .stat-num{animation:none!important;transform:none!important;}
     .stat::before{animation:none!important;opacity:1!important;box-shadow:none!important;}
     .stat::after{animation:none!important;transform:scaleX(1)!important;}
     .company-tag,.what .second .client{transform:none!important;box-shadow:none!important;background:transparent!important;}
+    .lang-grid.in-view .dots i{animation:none!important;transform:none!important;box-shadow:none!important;}
+    .merit-badge{animation:none!important;transform:none!important;}
   }
   /* ===== Contact card modal ===== */
   .qr-modal{
@@ -968,6 +987,26 @@
 
 
 
+
+
+
+
+
+
+  /* ---------- Touch devices: hover has no meaning, keep states visible/tappable ---------- */
+  @media (hover: none), (pointer: coarse){
+    .company-tag,.what .second .client{border-color:#c9a894;}
+    .what h3 .company-tag:hover{color:var(--ink);}
+    .stat:hover{transform:none;box-shadow:none;}
+    .stat:active{transform:scale(1.035);}
+    .work-timeline .job:hover{background:transparent;}
+    .work-timeline .job:hover .tl-dot{transform:none;box-shadow:none;}
+    .work-timeline .job:hover .tl-content{transform:none;}
+    .cc-body .chip:hover{transform:none;background:var(--accent-soft);color:var(--accent);box-shadow:none;}
+    .cc-body .chip.is-tapped{transform:scale(1.06);background:#f2cfba;color:#8f3a24;box-shadow:0 3px 10px rgba(196,90,61,.28);}
+    .cc-body .chip.is-peer{background:#f9e2d3;color:#a8452c;}
+  }
+
   /* ---------- Language switch ---------- */
   .hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
   .langlink{
@@ -1268,7 +1307,7 @@
           <div class="period">Sep 2019 &#8211; Dec 2022</div>
           <div class="school">University of Manchester<span style="color:var(--muted);font-weight:400;"> &middot; UK</span></div>
           <div class="degree">MA Translation and Interpreting Studies</div>
-          <div class="extra">Passed with Merit</div>
+          <div class="extra merit-line"><span class="merit-badge">Passed with Merit</span></div>
         </div>
       </div>
       <div class="edu" data-school="ecust">
@@ -1432,12 +1471,12 @@
       Recruiter FAQ
     </h2>
     <div class="faq">
-      <div class="faq-item"><p class="faq-q">Why are you looking for a new opportunity?</p><p class="faq-a">I've built a full IT-operations toolkit across Japan and China — end-user support, asset &amp; licence management, server/monitoring and automation. I'm now looking for a role with broader scope where I can own IT operations and tooling end to end.</p></div>
-      <div class="faq-item"><p class="faq-q">What is your expected salary?</p><p class="faq-a"><span class="ph">TBD — e.g. ¥X.XM / year, negotiable</span></p></div>
-      <div class="faq-item"><p class="faq-q">Where do you want to work, and what is your visa status?</p><p class="faq-a">Based in Japan (Osaka / Tokyo preferred), Japanese <b>JLPT N1</b> and fluent English; open to remote. Visa: Highly Skilled Professional (i)(b), valid until Oct 2030.</p></div>
-      <div class="faq-item"><p class="faq-q">When can you start?</p><p class="faq-a"><span class="ph">TBD — e.g. 1 month notice</span></p></div>
+      <div class="faq-item"><p class="faq-q">Why are you looking for a new opportunity?</p><p class="faq-a">Over the past five-plus years in Japan and China I've covered end-user support, asset and licence management, server and monitoring infrastructure, and automation. I'm now looking for broader responsibilities, with room to extend into cloud, development and infrastructure engineering. With marriage likely next year, I'm now aiming for a permanent role where I can contribute consistently and grow with the organisation over the long term.</p></div>
+      <div class="faq-item"><p class="faq-q">What is your expected salary?</p><p class="faq-a">JPY 9M+ per year, negotiable depending on the role, responsibilities and package</p></div>
+      <div class="faq-item"><p class="faq-q">Where do you want to work, and what is your visa status?</p><p class="faq-a">Based in Japan and flexible on location. Osaka, Tokyo and Fukuoka all work — I prefer cities with direct flights to Shanghai. Remote or hybrid is ideal, though I'm open to office-based roles for the right opportunity. Visa: Highly Skilled Professional (i)(b), valid until Oct 2030.</p></div>
+      <div class="faq-item"><p class="faq-q">When can you start?</p><p class="faq-a">One month's notice, so I could start roughly one month after accepting an offer.</p></div>
       <div class="faq-item"><p class="faq-q">How deep is your hands-on technical experience?</p><p class="faq-a">Daily tools include <b>ServiceNow</b>, Microsoft 365 / Intune, <b>Zabbix</b>, VMware ESXi, Windows and macOS; I also build automation in PowerShell / Python and internal tools in Node.js (licence-management module) and Tauri (printer driver installer).</p></div>
-      <div class="faq-item"><p class="faq-q">What is your career goal?</p><p class="faq-a">Grow into an IT operations lead / governance role that combines front-line support with the scripting and tooling I already build — turning repetitive ops work into standardized, automated processes.</p></div>
+      <div class="faq-item"><p class="faq-q">What is your career goal?</p><p class="faq-a">I see myself as an IT operations and infrastructure professional, with an interest in cloud, automation and broader IT engineering. Near to mid term I want to deepen hands-on expertise in cloud and infrastructure, automation and development, and widen the scope of what I can own. Longer term I'm aiming at IT consulting, technical leadership or IT management, where planning and decision-making matter alongside engineering. The path I have in mind: IT operations / infrastructure / automation → cloud, development, engineering and architecture → consulting, technical leadership and IT management.</p></div>
     </div>
   </section>
 
@@ -3946,9 +3985,9 @@ var qrcode = function() {
     var io = new IntersectionObserver(function(entries){
       entries.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in-view'); io.unobserve(e.target); } });
     }, {threshold:0.2, rootMargin:'0px 0px -10% 0px'});
-    document.querySelectorAll('.sec-title').forEach(function(t){ io.observe(t); });
+    document.querySelectorAll('.sec-title, .lang-grid').forEach(function(t){ io.observe(t); });
   } else {
-    document.querySelectorAll('.sec-title').forEach(function(t){ t.classList.add('in-view'); });
+    document.querySelectorAll('.sec-title, .lang-grid').forEach(function(t){ t.classList.add('in-view'); });
   }
   /* ---- hero QR + contact card modal ---- */
   var QR_DATA = null;
@@ -5484,6 +5523,7 @@ var qrcode = function() {
   var pts=cc.querySelectorAll('.radar-pt');
   function paint(a,self){
     if(a<0) cc.classList.remove('cc-focus'); else cc.classList.add('cc-focus');
+    for(var t=0;t<chips.length;t++) chips[t].classList.remove('is-tapped');
     for(var i=0;i<items.length;i++) items[i].classList.toggle('is-active',i===a);
     for(var j=0;j<axes.length;j++) axes[j].classList.toggle('is-active',j===a);
     for(var k=0;k<pts.length;k++) pts[k].classList.toggle('is-active',k===a);
@@ -5494,6 +5534,10 @@ var qrcode = function() {
     (function(a,chip){
       chip.addEventListener('mouseenter',function(){paint(a,chip);});
       chip.addEventListener('mouseleave',function(){paint(-1,null);});
+      chip.addEventListener('click',function(){
+        if(cc.classList.contains('cc-focus') && chip.classList.contains('is-tapped')) paint(-1,null);
+        else { paint(a,chip); chip.classList.add('is-tapped'); }
+      });
     })(axisOf[n],chips[n]);
   }
 })();
@@ -5517,32 +5561,6 @@ var qrcode = function() {
       });
     })(items[i]);
   }
-})();
-</script>
-<script>
-/* Idle signal: every few seconds one random stat card gives its number a brief tick. */
-(function(){
-  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  var cards = Array.prototype.slice.call(document.querySelectorAll('.stats-strip .stat'));
-  if(cards.length < 2) return;
-  var last = -1, timer = null;
-  function schedule(){
-    window.clearTimeout(timer);
-    timer = window.setTimeout(tick, 3200 + Math.random()*2600);
-  }
-  function tick(){
-    if(document.hidden || document.querySelector('.stats-strip .stat:hover')){ schedule(); return; }
-    var i = Math.floor(Math.random()*cards.length);
-    if(i === last) i = (i + 1) % cards.length;
-    last = i;
-    var card = cards[i];
-    card.classList.remove('is-tick');
-    void card.offsetWidth;
-    card.classList.add('is-tick');
-    window.setTimeout(function(){ card.classList.remove('is-tick'); }, 560);
-    schedule();
-  }
-  window.setTimeout(schedule, 1600);
 })();
 </script>
 </body>
