@@ -248,6 +248,16 @@
   .stat-num{
     font-size:16pt;font-weight:600;color:var(--accent);
     line-height:1;letter-spacing:.01em;
+    display:inline-block;transform-origin:center;
+    animation:statNumHop 3.2s cubic-bezier(.3,.8,.4,1) infinite;
+  }
+  .stat:nth-child(2) .stat-num{animation-delay:.24s;}
+  .stat:nth-child(3) .stat-num{animation-delay:.48s;}
+  .stat:nth-child(4) .stat-num{animation-delay:.72s;}
+  @keyframes statNumHop{
+    0%,72%,100%{transform:translateY(0) scale(1);}
+    80%{transform:translateY(-4px) scale(1.18);}
+    90%{transform:translateY(1px) scale(.96);}
   }
   .stat-lbl{
     font-size:8.2pt;color:var(--muted);
@@ -342,11 +352,17 @@
     border:1px solid transparent;border-radius:4px;
     padding:1px 7px;font-weight:700;line-height:1.45;
     transition:transform .18s ease,border-color .18s ease,color .18s ease;
+    animation:companyHop 3.2s cubic-bezier(.3,.8,.4,1) infinite;
   }
   .company-tag:hover,.company-tag:focus-visible,
   .what .second .client:hover,.what .second .client:focus-visible{
-    transform:scale(1.06);border-color:#c9a894;color:#8f3a24;
+    animation:none;transform:scale(1.06);border-color:#c9a894;color:#8f3a24;
     text-decoration:none;outline:none;
+  }
+  @keyframes companyHop{
+    0%,72%,100%{transform:translateY(0) scale(1);}
+    80%{transform:translateY(-3px) scale(1.06);}
+    90%{transform:translateY(1px) scale(.98);}
   }
   .what h3 .company-tag{font-size:11pt;font-weight:600;color:var(--ink);}
   .what h3 .company-tag:hover,.what h3 .company-tag:focus-visible{color:#8f3a24;}
@@ -424,17 +440,27 @@
   .edu .degree{margin:3px 0 0;font-size:8.8pt;color:var(--ink-soft);line-height:1.4;}
   .edu .extra{margin:3px 0 0;font-size:8.3pt;color:var(--muted);}
   .edu .extra.merit-line{margin-top:5px;}
-  .merit-badge{
+  .merit-badge{display:inline-block;}
+  .merit-prefix{color:var(--muted);}
+  .merit-hop{
     display:inline-block;
-    padding:2px 9px;border-radius:11px;
+    padding:1px 8px 2px;border-radius:10px;
     background:rgba(236,155,114,.13);
     color:#8f3a24;font-size:8.2pt;font-weight:700;letter-spacing:.02em;
-    transform-origin:left center;animation:meritHop 2.2s ease-in-out infinite;
+    white-space:nowrap;
   }
-  @keyframes meritHop{
-    0%,76%,100%{transform:translateY(0) scale(1);}
-    84%{transform:translateY(-3px) scale(1.05);}
-    92%{transform:translateY(1px) scale(.98);}
+  .merit-badge .merit-hop i{
+    display:inline-block;font-style:normal;transform-origin:center;
+    animation:meritLetterHop 3.2s cubic-bezier(.3,.8,.4,1) infinite;
+  }
+  .merit-badge .merit-hop i:nth-child(2){animation-delay:.18s;}
+  .merit-badge .merit-hop i:nth-child(3){animation-delay:.36s;}
+  .merit-badge .merit-hop i:nth-child(4){animation-delay:.54s;}
+  .merit-badge .merit-hop i:nth-child(5){animation-delay:.72s;}
+  @keyframes meritLetterHop{
+    0%,72%,100%{transform:translateY(0) scale(1);}
+    80%{transform:translateY(-4px) scale(1.35);}
+    90%{transform:translateY(1px) scale(.94);}
   }
 
   /* ---------- Languages (with proficiency dots) ---------- */
@@ -460,11 +486,11 @@
     80%{transform:translateY(-4px) scale(1.6);box-shadow:0 3px 7px rgba(196,90,61,.35);}
     90%{transform:translateY(1px) scale(.9);box-shadow:none;}
   }
-  .lang-grid.in-view .dots i{animation:langDotPop 1.6s cubic-bezier(.3,.8,.4,1) infinite;}
-  .lang-grid.in-view .dots i:nth-child(2){animation-delay:.09s;}
-  .lang-grid.in-view .dots i:nth-child(3){animation-delay:.18s;}
-  .lang-grid.in-view .dots i:nth-child(4){animation-delay:.27s;}
-  .lang-grid.in-view .dots i:nth-child(5){animation-delay:.36s;}
+  .lang-grid.in-view .dots i{animation:langDotPop 3.2s cubic-bezier(.3,.8,.4,1) infinite;}
+  .lang-grid.in-view .dots i:nth-child(2){animation-delay:.18s;}
+  .lang-grid.in-view .dots i:nth-child(3){animation-delay:.36s;}
+  .lang-grid.in-view .dots i:nth-child(4){animation-delay:.54s;}
+  .lang-grid.in-view .dots i:nth-child(5){animation-delay:.72s;}
   .lang .name em{font-style:normal;font-size:8.2pt;color:var(--muted);font-weight:500;}
   .lang ul{margin:6px 0 0;padding:0;list-style:none;}
   .lang ul li{
@@ -585,7 +611,7 @@
   .reveal{opacity:0;transform:translateY(14px);animation:rise .6s ease forwards;}
   @keyframes rise{to{opacity:1;transform:none;}}
   @media (prefers-reduced-motion: reduce){.reveal{animation:none;opacity:1;transform:none;}.radar-grow,.radar-grid-g,.radar-axis{animation:none;opacity:1;transform:none;}.radar-stroke{animation:none;stroke-dashoffset:0;}.radar-pt{animation:none;opacity:1;transform:none;}.radar-halo{animation:none;opacity:.38;transform:none;}.rf-ring{animation:none;opacity:.7;transform:none;}.stat::before{animation:none;opacity:1;box-shadow:0 0 6px 1px var(--lamp);}.stat::after{animation:none;transform:scaleX(1);}.stat{transition:none;}.stat:hover{transform:none;box-shadow:none;}}
-  @media (prefers-reduced-motion: reduce){.lang-grid.in-view .dots i{animation:none!important;transform:none!important;box-shadow:none!important;}.merit-badge{animation:none!important;transform:none!important;}}
+  @media (prefers-reduced-motion: reduce){.lang-grid.in-view .dots i{animation:none!important;transform:none!important;box-shadow:none!important;}.merit-badge .merit-hop i{animation:none!important;transform:none!important;}.stat-num{animation:none!important;transform:none!important;}.company-tag,.what .second .client{animation:none!important;transform:none!important;}}
   .side-nav{position:fixed;right:14px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:11px;z-index:30;}
   .side-nav a{width:11px;height:11px;border-radius:50%;background:rgba(42,78,124,.28);border:1px solid rgba(42,78,124,.5);transition:.25s;text-decoration:none;}
   .side-nav a:hover{background:rgba(42,78,124,.6);}
@@ -646,9 +672,10 @@
     .stat{transform:none!important;box-shadow:none!important;transition:none!important;}
     .stat::before{animation:none!important;opacity:1!important;box-shadow:none!important;}
     .stat::after{animation:none!important;transform:scaleX(1)!important;}
-    .company-tag,.what .second .client{transform:none!important;box-shadow:none!important;background:transparent!important;}
+    .company-tag,.what .second .client{animation:none!important;transform:none!important;box-shadow:none!important;background:transparent!important;}
     .lang-grid.in-view .dots i{animation:none!important;transform:none!important;box-shadow:none!important;}
-    .merit-badge{animation:none!important;transform:none!important;}
+    .merit-badge .merit-hop i{animation:none!important;transform:none!important;}
+    .stat-num{animation:none!important;transform:none!important;}
   }
   /* ===== Contact card modal ===== */
   .qr-modal{
@@ -1007,6 +1034,13 @@
     .cc-body .chip.is-peer{background:#f9e2d3;color:#a8452c;}
   }
 
+
+
+
+
+
+
+
   /* ---------- Language switch ---------- */
   .hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
   .langlink{
@@ -1306,7 +1340,7 @@
           <div class="period">2019年9月 ～ 2022年12月</div>
           <div class="school">マンチェスター大学<span style="color:var(--muted);font-weight:400;"> &middot; 英国</span></div>
           <div class="degree">大学院修士（Translation and Interpreting Studies）</div>
-          <div class="extra merit-line"><span class="merit-badge">Merit 評価で修了</span></div>
+          <div class="extra merit-line"><span class="merit-badge"><span class="merit-hop"><i>M</i><i>e</i><i>r</i><i>i</i><i>t</i></span><span class="merit-prefix">&nbsp;評価で修了</span></span></div>
         </div>
       </div>
       <div class="edu" data-school="ecust">
@@ -5539,6 +5573,11 @@ var qrcode = function() {
       });
     })(axisOf[n],chips[n]);
   }
+})();
+/* 公司名按出现顺序依次循环弹跳 */
+(function(){
+  var tags=document.querySelectorAll('.company-tag, .what .second .client');
+  for(var i=0;i<tags.length;i++) tags[i].style.animationDelay=(i*0.18).toFixed(2)+'s';
 })();
 /* Recruiter FAQ 默认折叠，点击问题展开 */
 (function(){
