@@ -3929,7 +3929,9 @@ var qrcode = function() {
     name:'George Zhang', role:ROLE,
     email:'zhxsdxin@gmail.com',
     tel1:'+81 90-8196-8581', tel2:'+86 182 1760 9086',
-    addr:'Osaka, Japan', url:'https://zhxsdxin.github.io/Resume/'
+    addr:'Osaka, Japan',
+    url2:'https://resume.zhxsdxin.workers.dev/',
+    url:'https://zhxsdxin.github.io/Resume/'
   };
   var VCARD_LINES = [
     'BEGIN:VCARD','VERSION:3.0',
@@ -3939,6 +3941,7 @@ var qrcode = function() {
     'TEL;TYPE=CELL:+819081968581',
     'TEL;TYPE=CELL:+8618217609086',
     'ADR;TYPE=HOME:;;;Osaka;;Japan',
+    'URL:'+CONTACT.url2,
     'URL:'+CONTACT.url,
     'END:VCARD'
   ];
@@ -3949,6 +3952,7 @@ var qrcode = function() {
     'Email: ' + CONTACT.email,
     'Phone: ' + CONTACT.tel1 + ' / ' + CONTACT.tel2,
     'Location: ' + CONTACT.addr,
+    'Resume: ' + CONTACT.url2,
     'Resume: ' + CONTACT.url
   ].join('\n');
 
@@ -4104,6 +4108,7 @@ var qrcode = function() {
       [T.k.email, '<a href="mailto:' + CONTACT.email + '">' + CONTACT.email + '</a>'],
       [T.k.tel,   CONTACT.tel1 + '<br>' + CONTACT.tel2],
       [T.k.addr,  CONTACT.addr],
+      [T.k.url,   '<a href="' + CONTACT.url2 + '" target="_blank" rel="noopener">' + CONTACT.url2 + '</a>'],
       [T.k.url,   '<a href="' + CONTACT.url + '" target="_blank" rel="noopener">' + CONTACT.url + '</a>']
     ];
     document.getElementById('qrFields').innerHTML = rows.map(function(p){
