@@ -199,6 +199,17 @@
   .contact .c-text{white-space:nowrap;}
   .contact svg{width:11px;height:11px;flex:none;fill:var(--accent-light);display:block;}
   .contact li.c-tel .c-link:first-child{align-items:center;}
+  /* copy-email fallback: small sibling icon beside the mailto link */
+  .contact .c-copy{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:1.35em;height:1.35em;padding:0;margin:0 0 0 -.25em;
+    border:0;background:none;color:var(--accent-light);cursor:pointer;
+    opacity:.68;transition:opacity .15s ease,transform .15s ease,color .15s ease;
+  }
+  .contact .c-copy:hover{opacity:1;transform:scale(1.08);}
+  .contact .c-copy:focus-visible{outline:2px solid #fff;outline-offset:1px;}
+  .contact .c-copy svg{width:1.05em;height:1.05em;fill:currentColor;}
+  .contact .c-copy.is-copied{color:#2e7d5b;opacity:1;}
 
   /* ---------- Profile ---------- */
   .profile{
@@ -667,6 +678,7 @@
     .cc-body.cc-focus .radar-axis:not(.is-active){opacity:1!important;}
     .cc-body.cc-focus .radar-pt:not(.is-active){opacity:1!important;}
     .faq-a{max-height:none!important;opacity:1!important;overflow:visible!important;}
+    .faq-a::after{display:none!important;}
     .faq-q::after{display:none!important;}
     .faq-q{padding-right:0!important;}
     .stat{transform:none!important;box-shadow:none!important;transition:none!important;}
@@ -822,6 +834,9 @@
     .contact li.c-tel .tel2{display:none !important;}
     .contact li{margin:0;gap:0;}
     .hero .contact li svg{width:20px;height:20px;}
+    .hero .contact li.c-email{flex-direction:column;gap:3px;}
+    .contact .c-copy{width:18px;height:18px;margin:0;}
+    .contact .c-copy svg{width:15px;height:15px;}
     .hero .hero-right{gap:6px;max-width:none;}
     .hero .hero-right a.langlink{font-size:10px;padding:3px 8px;border-radius:9px;}
   }
@@ -988,6 +1003,9 @@
   .faq-a{font-size:8.8pt;line-height:1.55;color:var(--text);margin:0;max-height:0;overflow:hidden;opacity:0;transition:max-height .28s ease,opacity .22s ease;}
   .faq-item.open .faq-a{max-height:320px;opacity:1;}
   .faq-a b{color:var(--ink);}
+  .faq-a.is-typing::after{content:"";display:inline-block;width:.5em;height:1em;margin-left:2px;background:var(--accent);vertical-align:-.16em;animation:faqCaret .7s steps(1) infinite;}
+  @keyframes faqCaret{50%{opacity:0;}}
+  @media (prefers-reduced-motion:reduce){.faq-a.is-typing::after{animation:none;}}
 
 
 
@@ -1034,28 +1052,63 @@
     .cc-body .chip.is-peer{background:#f9e2d3;color:#a8452c;}
   }
 
-
-
-
-
-
-
-
   /* ---------- Language switch ---------- */
   .hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
-  .langlink{
-    font:inherit;font-size:11px;letter-spacing:.04em;font-weight:600;
-    padding:4px 11px;border-radius:12px;white-space:nowrap;
+  .lang-tabs{
+    position:relative;display:inline-flex;align-items:center;gap:2px;
+    padding:3px;border-radius:999px;
     border:1px solid rgba(255,255,255,.5);
-    background:rgba(255,255,255,.10);color:#fff;
-    text-decoration:none;line-height:1.3;
-    transition:background .12s ease,color .12s ease;
+    background:rgba(255,255,255,.10);
+    -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+    animation:langTabsIn .55s .1s cubic-bezier(.2,.7,.2,1) both;
   }
-  .langlink:hover{background:#fff;color:var(--accent);}
-  .langlink::after{content:" →";}
-  @media screen and (max-width:760px){.langlink::after{content:"";}}
-  @media print{.langlink{display:none;}}
+  .lang-tabs::before{
+    content:"";position:absolute;z-index:0;top:3px;bottom:3px;left:3px;
+    width:calc((100% - 6px)/2);border-radius:999px;background:#fff;
+    transform:translateX(0);opacity:0;
+    transition:transform .26s cubic-bezier(.4,0,.2,1),opacity .18s ease;
+  }
+  .lang-tabs:has(.lang-tab:hover)::before{opacity:1;}
+  .lang-tabs:has(.lang-tab:nth-child(2):hover)::before{transform:translateX(100%);}
+  .lang-tab{
+    position:relative;z-index:1;flex:1 0 0;min-width:33px;text-align:center;
+    font:inherit;font-size:10px;font-weight:700;letter-spacing:.07em;
+    padding:4px 7px;border-radius:999px;text-decoration:none;line-height:1.3;
+    color:#fff;white-space:nowrap;user-select:none;
+    transition:color .15s ease,transform .15s ease;
+  }
+  .lang-tab:hover{color:var(--accent);transform:translateY(-1px);}
+  .lang-tab:focus-visible{outline:2px solid #fff;outline-offset:1px;}
+  @keyframes langTabsIn{from{opacity:0;transform:translateY(-7px);}to{opacity:1;transform:none;}}
+  @media screen and (max-width:760px){
+    .lang-tabs{padding:2px;gap:1px;}
+    .lang-tab{min-width:26px;font-size:9px;padding:3px 5px;letter-spacing:.04em;}
+  }
+  @media print{.lang-tabs{display:none;}}
+  @media (prefers-reduced-motion:reduce){
+    .lang-tabs{animation:none;}
+    .lang-tabs::before,.lang-tab{transition:none;}
+  }
   /* end language switch */
+
+  /* ---------- Language switch transition ---------- */
+  /* 跨页跳转的原生过渡：不支持的浏览器会自动按普通跳转处理。 */
+  @view-transition{navigation:auto;}
+  ::view-transition-old(root),
+  ::view-transition-new(root){
+    animation-duration:.32s;
+    animation-timing-function:cubic-bezier(.4,0,.2,1);
+  }
+  ::view-transition-old(root){animation-name:langFadeOut;}
+  ::view-transition-new(root){animation-name:langFadeIn;}
+  @keyframes langFadeOut{to{opacity:0;transform:translateY(-6px) scale(.998);}}
+  @keyframes langFadeIn{from{opacity:0;transform:translateY(8px) scale(.998);}}
+  @media (prefers-reduced-motion:reduce){
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*){animation:none !important;}
+  }
+  /* end language switch transition */
 </style>
 </head>
 <body>
@@ -1099,13 +1152,19 @@
       </div>
     </div>
     <div class="hero-right">
-      <a class="langlink" href="index.html">English</a>
+      <div class="lang-tabs" role="group" aria-label="Language switch">
+        <a class="lang-tab" href="index.html" hreflang="en" title="English">EN</a>
+        <a class="lang-tab" href="zh.html" hreflang="zh-CN" title="中文">CN</a>
+      </div>
       <ul class="contact">
       <li class="c-email">
         <a class="c-link" href="mailto:zhxsdxin&#64;gmail&#46;com">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4.2-8 5-8-5V6l8 5 8-5v2.2z"/></svg>
           <span class="c-text">zhxsdxin&#64;gmail&#46;com</span>
         </a>
+        <button class="c-copy" type="button" data-copy="zhxsdxin&#64;gmail&#46;com" data-label="メールアドレスをコピー" data-copied="コピーしました" aria-label="メールアドレスをコピー" title="メールアドレスをコピー">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11v14z"/></svg>
+        </button>
       </li>
       <li class="c-tel">
         <a class="c-link" href="tel:+819081968581">
@@ -5579,12 +5638,91 @@ var qrcode = function() {
   var tags=document.querySelectorAll('.company-tag, .what .second .client');
   for(var i=0;i<tags.length;i++) tags[i].style.animationDelay=(i*0.18).toFixed(2)+'s';
 })();
-/* Recruiter FAQ 默认折叠，点击问题展开 */
+/* Recruiter FAQ 默认折叠，点击问题后逐字显示答案 */
 (function(){
   var items=document.querySelectorAll('.faq .faq-item');
+  var answers=document.querySelectorAll('.faq-a');
+  var reduceMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function startTyping(el){
+    var walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT,null,false);
+    var nodes=[],full='',node;
+    while((node=walker.nextNode())){
+      if(!node.nodeValue) continue;
+      nodes.push({node:node,text:node.nodeValue});
+      full+=node.nodeValue;
+    }
+    if(!full) return null;
+
+    // 按阅读单位切块：汉字/假名每 3 字一组，西文按单词，标点并入前一块
+    var chunks=[],re=/[\u3400-\u9fff\u3040-\u30ff]+|[A-Za-z0-9]+(?:['’\-][A-Za-z0-9]+)*|\s+|[\s\S]/g,m;
+    while((m=re.exec(full))){
+      var t=m[0];
+      if(/^\s+$/.test(t)){
+        if(chunks.length) chunks[chunks.length-1]+=t;
+        else chunks.push(t);
+        continue;
+      }
+      if(/^[\u3400-\u9fff\u3040-\u30ff]+$/.test(t)){
+        for(var k=0;k<t.length;k+=3) chunks.push(t.slice(k,k+3));
+        continue;
+      }
+      if(/^[A-Za-z0-9]/.test(t)){
+        var pm=full.slice(re.lastIndex).match(/^[,.;:!?、。！？；：）)\]”']+/);
+        if(pm){ t+=pm[0]; re.lastIndex+=pm[0].length; }
+        chunks.push(t);
+        continue;
+      }
+      if(chunks.length) chunks[chunks.length-1]+=t;
+      else chunks.push(t);
+    }
+    var ends=[],acc=0,pauseCount=0;
+    for(var i=0;i<chunks.length;i++){
+      acc+=chunks[i].length;
+      ends.push(acc);
+      if(/[。！？；、,.!?;:—…]/.test(chunks[i].slice(-1))) pauseCount++;
+    }
+    var target=Math.min(6500,Math.max(3000,chunks.length*90));
+    var interval=Math.max(35,Math.min(90,Math.round((target-pauseCount*110)/chunks.length)));
+
+    nodes.forEach(function(x){x.node.nodeValue='';});
+    var idx=0,timer=null;
+
+    function finish(){
+      if(timer){clearTimeout(timer);timer=null;}
+      nodes.forEach(function(x){x.node.nodeValue=x.text;});
+      el.classList.remove('is-typing');
+      el.__faqTyping=null;
+    }
+    function paint(upto){
+      var used=0;
+      for(var j=0;j<nodes.length;j++){
+        var len=nodes[j].text.length;
+        if(used+len>=upto){
+          nodes[j].node.nodeValue=nodes[j].text.slice(0,upto-used);
+          break;
+        }
+        used+=len;
+      }
+    }
+    function step(){
+      paint(ends[idx]);
+      var last=chunks[idx].slice(-1);
+      idx++;
+      if(idx>=ends.length){timer=null;el.classList.remove('is-typing');el.__faqTyping=null;return;}
+      timer=setTimeout(step,/[。！？；、,.!?;:—…]/.test(last)?interval+110:interval);
+    }
+    var ctrl={finish:finish};
+    el.__faqTyping=ctrl;
+    el.classList.add('is-typing');
+    timer=setTimeout(step,80);
+    return ctrl;
+  }
+
   for(var i=0;i<items.length;i++){
     (function(item){
       var q=item.querySelector('.faq-q');
+      var a=item.querySelector('.faq-a');
       if(!q) return;
       q.setAttribute('role','button');
       q.setAttribute('tabindex','0');
@@ -5592,14 +5730,85 @@ var qrcode = function() {
       function toggle(){
         var open=item.classList.toggle('open');
         q.setAttribute('aria-expanded',open?'true':'false');
+        if(a&&a.__faqTyping) a.__faqTyping.finish();
+        if(open&&a&&!reduceMotion) startTyping(a);
       }
       q.addEventListener('click',toggle);
       q.addEventListener('keydown',function(e){
         if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}
       });
+      if(a) a.addEventListener('click',function(){
+        if(a.__faqTyping) a.__faqTyping.finish();
+      });
     })(items[i]);
   }
+  window.addEventListener('beforeprint',function(){
+    for(var i=0;i<answers.length;i++){
+      if(answers[i].__faqTyping) answers[i].__faqTyping.finish();
+    }
+  });
 })();
+</script>
+
+<script>
+  // copy-email fallback: works even where mailto is not handed to a mail app.
+  (function () {
+    var buttons = document.querySelectorAll('.contact .c-copy');
+    if (!buttons.length) return;
+    var COPY_ICON = 'M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11v14z';
+    var OK_ICON = 'M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z';
+    function writeText(t) {
+      if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t);
+      return new Promise(function (res, rej) {
+        var ta = document.createElement('textarea');
+        ta.value = t; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy') ? res() : rej(new Error('copy failed')); }
+        catch (e) { rej(e); }
+        document.body.removeChild(ta);
+      });
+    }
+    buttons.forEach(function (b) {
+      var path = b.querySelector('path'), timer = null;
+      b.addEventListener('click', function () {
+        writeText(b.dataset.copy || '').then(function () {
+          b.classList.add('is-copied');
+          if (path) path.setAttribute('d', OK_ICON);
+          b.setAttribute('title', b.dataset.copied || 'Copied');
+          b.setAttribute('aria-label', b.dataset.copied || 'Copied');
+          if (timer) clearTimeout(timer);
+          timer = setTimeout(function () {
+            b.classList.remove('is-copied');
+            if (path) path.setAttribute('d', COPY_ICON);
+            b.setAttribute('title', b.dataset.label || 'Copy email address');
+            b.setAttribute('aria-label', b.dataset.label || 'Copy email address');
+          }, 1600);
+        }).catch(function () {});
+      });
+    });
+  })();
+</script>
+
+<script>
+  // 悬停或聚焦语言 tab 时预取目标页；本地 file:// 预览跳过。
+  (function () {
+    if (location.protocol === 'file:') return;
+    var done = Object.create(null);
+    function prefetch(a) {
+      var href = a.getAttribute('href');
+      if (!href || done[href]) return;
+      done[href] = 1;
+      var link = document.createElement('link');
+      link.rel = 'prefetch';
+      link.href = href;
+      document.head.appendChild(link);
+    }
+    document.querySelectorAll('.lang-tab').forEach(function (a) {
+      a.addEventListener('pointerenter', function () { prefetch(a); }, { once: true });
+      a.addEventListener('focus', function () { prefetch(a); }, { once: true });
+      a.addEventListener('touchstart', function () { prefetch(a); }, { once: true, passive: true });
+    });
+  })();
 </script>
 </body>
 </html>
