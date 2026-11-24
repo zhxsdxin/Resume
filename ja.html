@@ -273,6 +273,7 @@
   .stat-lbl{
     font-size:8.2pt;color:var(--muted);
     letter-spacing:.08em;text-transform:uppercase;font-weight:500;
+    white-space:nowrap;
   }
 
   /* ---------- Section titles ---------- */
@@ -1191,7 +1192,7 @@
 
   <!-- ============ STATS STRIP ============ -->
   <div class="stats-strip">
-    <div class="stat"><span class="stat-num">5+</span><span class="stat-lbl">実務経験年数</span></div>
+    <div class="stat"><span class="stat-num">5.7</span><span class="stat-lbl">実務経験年数</span></div>
     <div class="stat"><span class="stat-num">3</span><span class="stat-lbl">対応言語</span></div>
     <div class="stat"><span class="stat-num">4</span><span class="stat-lbl">勤務社数</span></div>
     <div class="stat"><span class="stat-num">14</span><span class="stat-lbl">保有資格</span></div>
@@ -3911,15 +3912,23 @@ var qrcode = function() {
 <script>
 
 (function(){
+  /* ---- years of experience: (today - start date) / 365, one decimal ---- */
+  var EXP_START = Date.UTC(2021, 2, 29); /* 2021-03-29 */
+  var expNum = document.querySelector('.stats-strip .stat:first-child .stat-num');
+  if(expNum){
+    var expDays = (Date.now() - EXP_START) / 86400000;
+    expNum.textContent = (Math.round(expDays / 365 * 10) / 10).toFixed(1);
+  }
   function countUp(el){
     var raw = (el.textContent||'').trim();
-    var m = raw.match(/^(\d+)(.*)$/);
+    var m = raw.match(/^(\d+(?:\.\d+)?)(.*)$/);
     if(!m) return;
-    var target = parseInt(m[1],10), suffix = m[2], dur = 900, t0 = null;
-    el.textContent = '0' + suffix;
+    var target = parseFloat(m[1]), suffix = m[2], dur = 900, t0 = null;
+    var dec = (m[1].split('.')[1] || '').length;
+    el.textContent = (0).toFixed(dec) + suffix;
     function step(ts){ if(!t0) t0 = ts; var p = Math.min((ts - t0)/dur, 1);
-      el.textContent = Math.floor(p*target) + suffix;
-      if(p < 1) requestAnimationFrame(step); else el.textContent = target + suffix; }
+      el.textContent = (p*target).toFixed(dec) + suffix;
+      if(p < 1) requestAnimationFrame(step); else el.textContent = target.toFixed(dec) + suffix; }
     requestAnimationFrame(step);
   }
   /* ---- contact data: one source for the QR, clipboard and the .vcf file ---- */
