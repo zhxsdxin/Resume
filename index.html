@@ -236,6 +236,9 @@
     transition:transform .2s cubic-bezier(.22,.61,.36,1),box-shadow .2s ease;
   }
   .stat:hover{transform:scale(1.045);z-index:2;box-shadow:0 5px 16px rgba(19,29,41,.13);}
+  a.stat{text-decoration:none;color:inherit;cursor:pointer;}
+  a.stat:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  @media print{a.stat{text-decoration:none!important;}}
   .stat:nth-child(1){--lamp:#d9a441;--d:0s;}
   .stat:nth-child(2){--lamp:#3f9d93;--d:.18s;}
   .stat:nth-child(3){--lamp:#2a4e7c;--d:.36s;}
@@ -1194,9 +1197,9 @@
   <!-- ============ STATS STRIP ============ -->
   <div class="stats-strip">
     <div class="stat"><span class="stat-num">5.7</span><span class="stat-lbl">Yrs Exp</span></div>
-    <div class="stat"><span class="stat-num">3</span><span class="stat-lbl">Languages</span></div>
-    <div class="stat"><span class="stat-num">4</span><span class="stat-lbl">Employers</span></div>
-    <div class="stat"><span class="stat-num">14</span><span class="stat-lbl">Certifications</span></div>
+    <a class="stat" href="#s4"><span class="stat-num">3</span><span class="stat-lbl">Languages</span></a>
+    <a class="stat" href="#s2"><span class="stat-num">4</span><span class="stat-lbl">Employers</span></a>
+    <a class="stat" href="#s5"><span class="stat-num">14</span><span class="stat-lbl">Certifications</span></a>
   </div>
 
   <!-- ============ CORE COMPETENCIES ============ -->
