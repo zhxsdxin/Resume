@@ -13,7 +13,8 @@
 - 切换时两页通过原生跨页过渡做约 0.32 秒淡入淡出，Chrome / Edge / Safari 等支持；不支持的浏览器按普通跳转处理，内容不受影响。系统开启「减少动态效果」时自动取消动画。
 - 鼠标悬停、键盘聚焦或手指按下 tab 时会预取目标页，实际点击时等待更短；本地 `file://` 预览不预取。跨页过渡在 `file://` 下可能被浏览器跳过，本地想看效果可用 `python3 -m http.server` 起个服务再打开。过渡样式与预取脚本写在 `github-sync/make_jp.py`，重生成即可保留。
 - 本地目录对应 `Resume-Xin-Zhang-EN-enhanced.html` / `Resume-Xin-Zhang-JP.html` / `Resume-Xin-Zhang-ZH.html`；本目录对应 `index.html` / `ja.html` / `zh.html`。
-- tab 在 `@media print` 中隐藏，导出的 PDF 不带控件，也不影响打印版面。
+- 英文版首次打开时，右上角椭圆 tab 的框线持续高亮呼吸，旁边出现一张三语说明小窗；点小窗内 ×、点页面空白处或按 Esc 都能关掉，关闭后呼吸随之停止，状态写入 `localStorage`，之后不再出现。日文版、中文版不带这个引导。
+- tab 与小窗在 `@media print` 中隐藏，导出的 PDF 不带控件，也不影响打印版面。
 - **发布时三份文件必须一起推**，只传 `index.html` 的话跳转会 404。
 
 ## 与履歴書・職務経歴書的区别

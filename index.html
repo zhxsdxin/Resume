@@ -1113,6 +1113,65 @@
     ::view-transition-new(*){animation:none !important;}
   }
   /* end language switch transition */
+
+  /* ---------- Language switch hint ---------- */
+  /* tabs 的 backdrop-filter 会生成层叠上下文，父级需抬到 contact 之上 */
+  .lang-tabs{z-index:30;}
+  .lang-tabs.lang-hint-on::after{
+    content:"";position:absolute;inset:-2px;border-radius:999px;
+    border:2px solid #ffd166;pointer-events:none;
+    animation:langHintBorder 1.7s ease-in-out infinite;
+  }
+  @keyframes langHintBorder{
+    0%,100%{opacity:.4;box-shadow:0 0 0 0 rgba(255,209,102,0);}
+    50%{opacity:1;box-shadow:0 0 0 5px rgba(255,209,102,.32);}
+  }
+  .lang-hint{
+    position:absolute;z-index:20;top:calc(100% + 10px);right:-2px;
+    width:max-content;max-width:min(286px,calc(100vw - 40px));
+    padding:11px 13px 10px;border-radius:9px;
+    background:#fff;color:var(--ink);border:1px solid var(--line);
+    box-shadow:0 8px 26px rgba(22,35,46,.18);
+    text-align:left;
+    animation:langHintIn .45s .55s cubic-bezier(.2,.7,.2,1) both;
+  }
+  .lang-hint::before{
+    content:"";position:absolute;top:-5px;right:18px;width:9px;height:9px;
+    background:#fff;border-left:1px solid var(--line);border-top:1px solid var(--line);
+    transform:rotate(45deg);
+  }
+  .lang-hint-t{margin:0 0 7px;font-size:9.5pt;font-weight:700;letter-spacing:.04em;color:var(--accent);}
+  .lang-hint-l{
+    margin:0 0 4px;font-size:9pt;line-height:1.45;color:var(--ink);
+    display:flex;align-items:center;gap:7px;
+  }
+  .lang-hint-l span{
+    flex:none;min-width:22px;padding:1px 5px;border-radius:999px;
+    background:var(--accent-soft);color:var(--accent);
+    font-size:8pt;font-weight:700;text-align:center;
+  }
+  .lang-hint-close{
+    position:absolute;top:5px;right:6px;width:20px;height:20px;
+    padding:0;border:0;background:none;color:#6b7790;cursor:pointer;
+    font:inherit;font-size:14px;line-height:20px;text-align:center;
+  }
+  .lang-hint-close:hover{color:var(--accent);}
+  .lang-hint-close:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-radius:3px;}
+  .lang-hint.is-out{
+    animation:none;opacity:0;transform:translateY(-5px);pointer-events:none;
+    transition:opacity .2s ease,transform .2s ease;
+  }
+  .lang-hint.is-hidden{display:none;}
+  @keyframes langHintIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
+  @media screen and (max-width:760px){
+    .lang-hint{width:max-content;max-width:min(266px,calc(100vw - 40px));padding:10px 11px 9px;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .lang-tabs.lang-hint-on,.lang-tabs.lang-hint-on::after{animation:none;}
+    .lang-hint{animation:none;opacity:1;transform:none;}
+    .lang-hint.is-out{transition:none;}
+  }
+  /* end language switch hint */
 </style>
 </head>
 <body>
@@ -1159,6 +1218,13 @@
       <div class="lang-tabs" role="group" aria-label="Language switch">
         <a class="lang-tab" href="ja.html" hreflang="ja" title="日本語">JP</a>
         <a class="lang-tab" href="zh.html" hreflang="zh-CN" title="中文">CN</a>
+        <div class="lang-hint" role="note" aria-label="Language guide">
+          <p class="lang-hint-t">Choose your language</p>
+          <p class="lang-hint-l"><span>EN</span>English version</p>
+          <p class="lang-hint-l"><span>JP</span>日本語版 · 上のタブから切替</p>
+          <p class="lang-hint-l"><span>CN</span>中文版 · 点上方按钮切换</p>
+          <button class="lang-hint-close" type="button" aria-label="Dismiss language guide">&times;</button>
+        </div>
       </div>
       <ul class="contact">
       <li class="c-email">
@@ -5825,6 +5891,39 @@ var qrcode = function() {
       a.addEventListener('pointerenter', function () { prefetch(a); }, { once: true });
       a.addEventListener('focus', function () { prefetch(a); }, { once: true });
       a.addEventListener('touchstart', function () { prefetch(a); }, { once: true, passive: true });
+    });
+  })();
+</script>
+
+<script>
+  // 语言切换引导小窗：首次访问显示，关闭后写入 localStorage，不再出现。
+  (function () {
+    var box = document.querySelector('.lang-hint');
+    if (!box) return;
+    var tabs = box.closest('.lang-tabs') || box.parentElement;
+    var KEY = 'resume-lang-hint-dismissed';
+    function dismissed() {
+      try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; }
+    }
+    function close(persist) {
+      if (box.classList.contains('is-out')) return;
+      box.classList.add('is-out');
+      if (tabs) tabs.classList.remove('lang-hint-on');
+      window.setTimeout(function () { box.classList.add('is-hidden'); }, 220);
+      if (persist) {
+        try { localStorage.setItem(KEY, '1'); } catch (e) {}
+      }
+    }
+    if (dismissed()) { close(false); return; }
+    if (tabs) tabs.classList.add('lang-hint-on');
+    var btn = box.querySelector('.lang-hint-close');
+    if (btn) btn.addEventListener('click', function (e) { e.stopPropagation(); close(true); });
+    box.addEventListener('click', function (e) { e.stopPropagation(); });
+    document.addEventListener('pointerdown', function (e) {
+      if (!box.contains(e.target) && !(tabs && tabs.contains(e.target))) close(true);
+    }, true);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') close(true);
     });
   })();
 </script>
