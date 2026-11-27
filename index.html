@@ -85,11 +85,22 @@
   :root:has(#crest-watermark:checked) .edu.edu-wide .crest-img{width:auto;height:46px;}
 
   .sheet{
+    position:relative;
     width:210mm;min-height:297mm;margin:12px auto 40px;
     background:var(--paper);
     padding:12mm 13mm 14mm;
     box-shadow:0 2px 24px rgba(22,35,46,.14);
   }
+  /* spotlight: on name hover, dim + blur everything inside the sheet except
+     the name and its tooltip. Pointer events pass through the overlay. */
+  .sheet::after{
+    content:"";position:absolute;inset:0;z-index:40;
+    background:rgba(19,29,41,.46);
+    -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+    opacity:0;pointer-events:none;
+    transition:opacity .18s ease;
+  }
+  .sheet.pdf-hover::after{opacity:1;}
 
   /* ---------- Hero ---------- */
   .hero{
@@ -165,6 +176,46 @@
     text-transform:uppercase;white-space:nowrap;
   }
   .hero h1 b{font-weight:500;}
+  /* PDF export affordance on the name: instant tooltip (no native title delay),
+     enlarge + PDF cursor on hover, and a highlight on the sheet frame. */
+  #nameH1{
+    position:relative;z-index:50;display:inline-block;
+    transform-origin:left center;
+    transition:transform .18s ease,color .18s ease;
+    cursor:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2732%27%20height%3D%2732%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23131d29%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M6%2022a2%202%200%200%201-2-2V4a2%202%200%200%201%202-2h8a2.4%202.4%200%200%201%201.704.706l3.588%203.588A2.4%202.4%200%200%201%2020%208v12a2%202%200%200%201-2%202z%27%20fill%3D%27%23ffffff%27%2F%3E%3Cpath%20d%3D%27M14%202v5a1%201%200%200%200%201%201h5%27%20fill%3D%27%23dce8f5%27%2F%3E%3Cpath%20d%3D%27M12%2018v-6%27%20stroke%3D%27%23e74c3c%27%20stroke-width%3D%272.2%27%2F%3E%3Cpath%20d%3D%27m9%2015%203%203%203-3%27%20stroke%3D%27%23e74c3c%27%20stroke-width%3D%272.2%27%2F%3E%3C%2Fsvg%3E") 16 16,pointer;
+  }
+  #nameH1:hover{transform:scale(1.07);color:#fff;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4));}
+  /* tooltip: frosted-glass panel so the text stays legible over the dark hero */
+  #nameH1::after{
+    content:attr(data-pdf-tip);
+    position:absolute;left:0;top:calc(100% + 10px);
+    padding:7px 12px;border-radius:7px;
+    background:rgba(201,69,31,.92);
+    -webkit-backdrop-filter:blur(9px) saturate(1.4);
+    backdrop-filter:blur(9px) saturate(1.4);
+    border:1px solid rgba(255,255,255,.32);
+    box-shadow:0 8px 26px rgba(0,0,0,.34);
+    color:#fff;
+    font-size:9.5pt;font-weight:600;letter-spacing:.02em;
+    text-transform:none;white-space:nowrap;
+    opacity:0;pointer-events:none;
+    transform:translateY(-4px);
+    transition:opacity .1s ease,transform .1s ease;
+    z-index:6;
+  }
+  /* small caret pointing back at the name */
+  #nameH1::before{
+    content:"";position:absolute;left:20px;top:calc(100% + 4px);
+    border:6px solid transparent;border-bottom-color:rgba(201,69,31,.92);
+    opacity:0;pointer-events:none;
+    transition:opacity .1s ease;
+    z-index:6;
+  }
+  #nameH1:hover::after{opacity:1;transform:translateY(0);}
+  #nameH1:hover::before{opacity:1;}
+  .sheet.pdf-hover{
+    box-shadow:0 0 0 4px #e0532f,0 8px 52px rgba(224,83,47,.4);
+  }
   .hero .cn-name{
     margin:4px 0 0;
     font-size:13pt;font-weight:400;letter-spacing:.22em;color:var(--hero-sub);
@@ -586,6 +637,10 @@
       width:auto;min-height:0;margin:0;padding:0 12mm;
       box-shadow:none;
     }
+    .sheet.pdf-hover{box-shadow:none!important;}
+    .sheet::after{display:none!important;}
+    #nameH1,#nameH1:hover{transform:none!important;cursor:auto!important;filter:none!important;}
+    #nameH1::after,#nameH1::before{display:none!important;}
     .hero{border-radius:3px;}
     section{break-inside:auto;}
     .work-timeline .job{break-inside:auto;}
@@ -596,6 +651,8 @@
     .avatar-qr,.avatar-fx,.avatar-gl{display:none!important;}
     .avatar-photo{opacity:1!important;}
     .qr-cap{display:none!important;}
+    /* PDF export: no screen-only copy-to-clipboard icon */
+    .contact .c-copy{display:none!important;}
   }
 
 
@@ -675,16 +732,19 @@
   @media print{
     .side-nav{display:none!important;}
     .reveal{opacity:1!important;transform:none!important;animation:none!important;}
-    .cc-body{grid-template-columns:1fr 190px 1fr;gap:9px;}
-    .cc-body .radar-wrap svg{max-width:190px;}
-    .radar-focus{display:none!important;}
+    /* PDF export: the radar is an interactive, screen-only aid. Drop it and
+       give the two chip columns the full width instead of the middle slot. */
+    .radar-wrap{display:none!important;}
+    .cc-body{grid-template-columns:1fr 1fr;gap:12px;}
+    .cc-body .chips.cc-left{align-items:flex-end;}
+    .cc-body .chips.cc-right{align-items:flex-start;}
     .cc-body .chip{transform:none!important;box-shadow:none!important;}
-    .cc-body.cc-focus .radar-axis:not(.is-active){opacity:1!important;}
-    .cc-body.cc-focus .radar-pt:not(.is-active){opacity:1!important;}
-    .faq-a{max-height:none!important;opacity:1!important;overflow:visible!important;}
-    .faq-a::after{display:none!important;}
-    .faq-q::after{display:none!important;}
-    .faq-q{padding-right:0!important;}
+    /* PDF export: FAQ is for the live page, not the one-page resume. Hiding
+       the whole section also avoids an orphaned heading at a page break. */
+    #s7{display:none!important;}
+    /* PDF export: drop the decorative QQ watermark. As an absolutely
+       positioned ::before on a long list it is cut mid-figure at page breaks. */
+    .work-timeline > .job:first-child .what > ul::before{display:none!important;}
     .stat{transform:none!important;box-shadow:none!important;transition:none!important;}
     .stat::before{animation:none!important;opacity:1!important;box-shadow:none!important;}
     .stat::after{animation:none!important;transform:scaleX(1)!important;}
@@ -1145,11 +1205,17 @@
     margin:0 0 4px;font-size:9pt;line-height:1.45;color:var(--ink);
     display:flex;align-items:center;gap:7px;
   }
-  .lang-hint-l span{
+  .lang-hint-l span,.lang-hint-pdf span{
     flex:none;min-width:22px;padding:1px 5px;border-radius:999px;
     background:var(--accent-soft);color:var(--accent);
     font-size:8pt;font-weight:700;text-align:center;
   }
+  .lang-hint-pdf{
+    margin:8px 0 0;padding-top:8px;border-top:1px solid var(--line);
+    font-size:9pt;line-height:1.45;color:var(--ink-soft);
+    display:flex;align-items:center;gap:7px;
+  }
+  .lang-hint-pdf b{color:var(--accent);font-weight:700;}
   .lang-hint-close{
     position:absolute;top:5px;right:6px;width:20px;height:20px;
     padding:0;border:0;background:none;color:#6b7790;cursor:pointer;
@@ -1223,6 +1289,7 @@
           <p class="lang-hint-l"><span>EN</span>English version</p>
           <p class="lang-hint-l"><span>JP</span>日本語版 · 上のタブから切替</p>
           <p class="lang-hint-l"><span>CN</span>中文版 · 点上方按钮切换</p>
+          <p class="lang-hint-pdf"><span>PDF</span>Save as PDF · <b>⌘P / Ctrl+P</b></p>
           <button class="lang-hint-close" type="button" aria-label="Dismiss language guide">&times;</button>
         </div>
       </div>
@@ -3995,6 +4062,9 @@ var qrcode = function() {
     if(!m) return;
     var target = parseFloat(m[1]), suffix = m[2], dur = 900, t0 = null;
     var dec = (m[1].split('.')[1] || '').length;
+    /* remember the settled value so beforeprint can restore it even when a
+       headless printer snapshot never advances requestAnimationFrame */
+    el.dataset.final = target.toFixed(dec) + suffix;
     el.textContent = (0).toFixed(dec) + suffix;
     function step(ts){ if(!t0) t0 = ts; var p = Math.min((ts - t0)/dur, 1);
       el.textContent = (p*target).toFixed(dec) + suffix;
@@ -4255,22 +4325,18 @@ var qrcode = function() {
     });
   }
 
-  /* triple-click the name to export PDF */
+  /* click the name to export PDF */
   var nameH1 = document.getElementById('nameH1');
   if(nameH1){
-    var geoClicks = 0, geoTimer = null;
-    nameH1.style.cursor = 'pointer';
-    nameH1.title = 'Triple-click to export PDF';
-    nameH1.addEventListener('click', function(){
-      geoClicks++;
-      if(geoTimer) clearTimeout(geoTimer);
-      geoTimer = setTimeout(function(){ geoClicks = 0; }, 600);
-      if(geoClicks >= 3){
-        geoClicks = 0;
-        if(geoTimer) clearTimeout(geoTimer);
-        window.print();
-      }
+    var pdfSheet = document.querySelector('.sheet');
+    nameH1.setAttribute('data-pdf-tip','Click to export PDF');
+    nameH1.addEventListener('mouseenter',function(){
+      if(pdfSheet) pdfSheet.classList.add('pdf-hover');
     });
+    nameH1.addEventListener('mouseleave',function(){
+      if(pdfSheet) pdfSheet.classList.remove('pdf-hover');
+    });
+    nameH1.addEventListener('click', function(){ window.print(); });
   }
 
   /* location icon/label: show a centred toast that fades out automatically */
@@ -5830,6 +5896,15 @@ var qrcode = function() {
     for(var i=0;i<answers.length;i++){
       if(answers[i].__faqTyping) answers[i].__faqTyping.finish();
     }
+  });
+  /* PDF export: settle the stat numbers. The rAF count-up can be mid-flight
+     (or never advanced in a headless print snapshot), so write the remembered
+     final values before the browser captures the page. */
+  window.addEventListener('beforeprint',function(){
+    document.querySelectorAll('.stat-num').forEach(function(el){
+      var fin = el.getAttribute('data-final');
+      if(fin) el.textContent = fin;
+    });
   });
 })();
 </script>
