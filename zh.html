@@ -1116,6 +1116,37 @@
     .cc-body .chip.is-peer{background:#f9e2d3;color:#a8452c;}
   }
 
+  /* ---------- Instant hover tips (native title replacement) ---------- */
+  .q-tip{position:relative;}
+  .q-tip::after{
+    content:attr(data-tip);
+    position:absolute;z-index:25;
+    padding:5px 9px;border-radius:6px;
+    background:rgba(201,69,31,.95);
+    border:1px solid rgba(255,255,255,.3);
+    box-shadow:0 6px 18px rgba(0,0,0,.28);
+    color:#fff;font-size:9.5pt;font-weight:600;letter-spacing:.01em;
+    line-height:1.25;white-space:nowrap;text-transform:none;
+    opacity:0;pointer-events:none;
+    transition:opacity .08s ease,transform .08s ease;
+  }
+  .q-tip:hover::after,.q-tip:focus-visible::after{opacity:1;transform:none;}
+  /* language tabs: transparent panel with a white outline, above the pill */
+  .lang-tab.q-tip::after{
+    bottom:calc(100% + 9px);left:50%;transform:translateX(-50%) translateY(3px);
+    background:transparent;border:1px solid #fff;box-shadow:none;
+  }
+  .lang-tab.q-tip:hover::after,.lang-tab.q-tip:focus-visible::after{transform:translateX(-50%);}
+  /* side-nav dots: tip to the left on desktop, above on the mobile bar */
+  .side-nav a.q-tip::after{right:calc(100% + 10px);top:50%;transform:translateX(4px) translateY(-50%);}
+  .side-nav a.q-tip:hover::after,.side-nav a.q-tip:focus-visible::after{transform:translateY(-50%);}
+  @media screen and (max-width:760px){
+    .side-nav a.q-tip::after{right:auto;left:50%;top:auto;bottom:calc(100% + 9px);transform:translateX(-50%) translateY(3px);}
+    .side-nav a.q-tip:hover::after,.side-nav a.q-tip:focus-visible::after{transform:translateX(-50%);}
+  }
+  @media print{.q-tip::after{display:none!important;}}
+  @media (prefers-reduced-motion:reduce){.q-tip::after{transition:none;}}
+
   /* ---------- Language switch ---------- */
   .hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
   .lang-tabs{
@@ -5873,6 +5904,22 @@ var qrcode = function() {
       });
     });
   })();
+</script>
+
+<script>
+// 仅语言切换与侧边圆点保留即时 tooltip，其余元素维持原生 title 行为
+(function () {
+  var els = document.querySelectorAll('a.lang-tab[title],.side-nav a[title]');
+  for (var i = 0; i < els.length; i++) {
+    var el = els[i];
+    if (!(el instanceof HTMLElement)) continue;
+    var text = el.getAttribute('title');
+    if (!text) continue;
+    el.setAttribute('data-tip', text);
+    el.removeAttribute('title');
+    el.classList.add('q-tip');
+  }
+})();
 </script>
 
 <script>
