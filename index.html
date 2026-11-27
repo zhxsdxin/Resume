@@ -653,6 +653,10 @@
     .qr-cap{display:none!important;}
     /* PDF export: no screen-only copy-to-clipboard icon */
     .contact .c-copy{display:none!important;}
+    /* same page rhythm in every language: page 2 starts at Key Achievements,
+       page 3 starts at section 03 (Education) */
+    .achieve{break-before:page;page-break-before:always;}
+    #s3{break-before:page;page-break-before:always;}
   }
 
 
@@ -752,6 +756,25 @@
     .lang-grid.in-view .dots i{animation:none!important;transform:none!important;box-shadow:none!important;}
     .merit-badge .merit-hop i{animation:none!important;transform:none!important;}
     .stat-num{animation:none!important;transform:none!important;}
+    /* print-only vertical rhythm: fill the page instead of leaving a heavy top
+       and a large blank bottom after the forced breaks */
+    section{margin-top:20px;}
+    .work-timeline .job{padding-bottom:18px;}
+    .work-timeline .job + .job{padding-top:18px;}
+    .what ul li{margin-bottom:6px;line-height:1.52;}
+    .achieve{padding:12px 12px 13px;}
+    .achieve ul li{margin-bottom:6px;line-height:1.5;}
+    .edu-grid{gap:14px;}
+    .edu{padding:12px 11px 13px;}
+    .awards li{margin-bottom:6px;}
+    /* CJK text sets tighter than English, so give it a little more air */
+    html[lang="ja"] .what ul li{margin-bottom:7px;}
+    html[lang="ja"] .work-timeline .job{padding-bottom:20px;}
+    html[lang="ja"] .work-timeline .job + .job{padding-top:20px;}
+    html[lang="zh-CN"] .what ul li{margin-bottom:9px;line-height:1.54;}
+    html[lang="zh-CN"] .achieve ul li{margin-bottom:8px;line-height:1.52;}
+    html[lang="zh-CN"] .work-timeline .job{padding-bottom:22px;}
+    html[lang="zh-CN"] .work-timeline .job + .job{padding-top:22px;}
   }
   /* ===== Contact card modal ===== */
   .qr-modal{
